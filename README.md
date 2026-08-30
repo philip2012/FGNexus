@@ -1,54 +1,125 @@
-# fg-nexus
+# FG Nexus
 
-This template should help get you started developing with Vue 3 in Vite.
+An all-in-one web companion platform for the open-source flight simulator, FlightGear.
 
-## Recommended IDE Setup
+FG Nexus is an independent, open-source project with the purpose of providing a modern web interface for interacting with and extending a FlightGear session.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+The long-term goal is to add live telemetry, maps, flight planning, multiplayer tools, aircraft utilities, ATC, logging, and other companion features into one unified application.
 
-## Recommended Browser Setup
+> [!NOTE]
+> FG Nexus is currently in early development. Most planned features are not implemented at the moment.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## Goals
 
-## Type Support for `.vue` Imports in TS
+FG Nexus is built around these core ideas:
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+> ✈️ **FlightGear-First**
+> Built natively around FlightGear's ecosystem rather than treating it as an afterthought.
+>
+> 🌐 **Web-Based & Cross-Device**
+> Designed to run through a browser across desktop, tablet, and mobile devices.
+>
+> ⚡ **Real-Time Integration**
+> Designed for bi-directional data synchronization with active FlightGear sessions.
+>
+> 🧩 **Modular & Open-Source**
+> Fully open-source architecture designed for modular expansion and future extensibility.
 
-## Customize configuration
+## Planned Features
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+**Core Navigation & Flight**  
+`Live Telemetry` • `Moving Map` • `Flight Planning` • `Airport & Nav Info`
 
-## Project Setup
+**Cockpit & Aircraft Controls**  
+`Radio Management` • `Autopilot Monitoring & Control` • `Aircraft Utilities` • `Weight & Balance` • `Checklists`
 
-```sh
+**Environment & Session**  
+`Weather & Environment` • `Multiplayer Traffic` • `Flight Logging` • `Failure Management`
+
+**Integrations & Dev Tools**  
+`Virtual Airline Tools` • `SimBrief Integration` • `Property-Tree Tools` • `AI-Assisted ATC`
+
+> [!NOTE]
+> The current feature set may change as the project continues to develop further.
+
+## Current Stack
+
+The initial application uses:
+
+- Vue 3
+- TypeScript
+- Vite
+- Vue Router
+- Pinia
+- Vitest
+- ESLint / Oxlint
+- Prettier
+
+Additional backend and FlightGear integration technologies will be introduced if needed.
+
+## Development
+
+### Requirements
+
+**Includes:** Node.js 20.19+ or 22.12+, npm
+
+### Install dependencies
+
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Start the development server
 
-```sh
+```bash
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+### Format the codebase
 
-```sh
-npm run build
+```bash
+npm run format
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+> [!NOTE]
+> Additional commands are available in `package.json`.
 
-```sh
-npm run test:unit
+## Project Status
+
+### Pre-alpha
+
+Our current milestone is establishing the Vue application structure and building the first telemetry dashboard.
+
+Live FlightGear integration will be introduced after the initial frontend is in place and functional.
+
+## Architecture Direction
+
+FG Nexus is expected to evolve into three main layers:
+
+```text
+FG Nexus Web
+    │
+    │ REST / WebSocket
+    ▼
+FG Nexus Services
+    │
+    ▼
+Local FlightGear Bridge
+    │
+    ▼
+FlightGear
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+The local bridge is intended to handle simulator telemetry, FlightGear property access, simulator commands, connection management, and secure access from other devices.
 
-```sh
-npm run lint
-```
+## Inspiration
+
+FG Nexus was partly inspired by the modernization work in `t3r/smweb-vue`, which rebuilt FlightGear's scenery database web application using a modern Vue-based stack.
+
+This got the project's author, Philips Nguyen, interested in applying his observations toward improving and expanding on FlightGear's Phi web interface, which led to the creation of FG Nexus.
+
+## License
+
+FG Nexus is licensed under the Apache License 2.0.
+
+See [`LICENSE`](LICENSE) for the full license text.
