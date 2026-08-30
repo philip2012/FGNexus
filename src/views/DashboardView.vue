@@ -1,17 +1,33 @@
 <template>
-  <div>
-    <TelemetryCard label="Altitude" :value="altitude" unit="ft" />
-    <TelemetryCard label="Indicated Airspeed" :value="airspeed" unit="kt" />
-    <TelemetryCard label="Magnetic Heading" :value="heading" unit="°" />
-  </div>
+  <TelemetryPanel :telemetry="telemetry" />
 </template>
 
 <script setup lang="ts">
-import TelemetryCard from '@/components/TelemetryCard.vue'
+import TelemetryPanel from '@/components/TelemetryPanel.vue'
 
-const airspeed = 250
-const altitude = 10000
-const heading = 180
+interface TelemetryItem {
+  label: string
+  value: number
+  unit: string
+}
+
+const telemetry: TelemetryItem[] = [
+  {
+    label: 'Altitude',
+    value: 10000,
+    unit: 'ft',
+  },
+  {
+    label: 'Indicated Airspeed',
+    value: 250,
+    unit: 'kt',
+  },
+  {
+    label: 'Magnetic Heading',
+    value: 180,
+    unit: '°',
+  },
+]
 </script>
 
 <style scoped></style>
