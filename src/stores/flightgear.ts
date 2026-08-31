@@ -15,6 +15,8 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   const longitudeDeg = ref<number | null>(null)
   const trackDeg = ref<number | null>(null)
 
+  const lastTelemetryUpdate = ref<number | null>(null)
+
   type PropertyHandler = (value: unknown) => void
 
   const propertyHandlers: Record<string, PropertyHandler> = {
@@ -68,6 +70,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     latitudeDeg.value = null
     longitudeDeg.value = null
     trackDeg.value = null
+    lastTelemetryUpdate.value = null
   }
 
   function subscribeTo(path: string) {
@@ -104,6 +107,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
         if (handler) {
           handler(data.value)
+          lastTelemetryUpdate.value = Date.now()
         }
       } catch (error) {
         console.error('Failed to parse FlightGear message:', error)
@@ -145,6 +149,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     trackDeg,
 
     connectionState,
+    lastTelemetryUpdate,
     connect,
     disconnect,
   }
