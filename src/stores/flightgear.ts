@@ -5,7 +5,7 @@ import type { FlightGearConnectionState } from '@/types/flightgear-connection'
 export const useFlightGearStore = defineStore('flightgear', () => {
   const altitudeFt = ref<number | null>(null)
   const airspeedKt = ref<number | null>(null)
-  const headingDeg = ref<number | null>(null)
+  const magneticHeadingDeg = ref<number | null>(null)
 
   const groundspeedKt = ref<number | null>(null)
   const verticalSpeedFpm = ref<number | null>(null)
@@ -26,8 +26,8 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       airspeedKt.value = Number(value)
     },
 
-    '/orientation/heading-deg': (value) => {
-      headingDeg.value = Number(value)
+    '/orientation/heading-magnetic-deg': (value) => {
+      magneticHeadingDeg.value = Number(value)
     },
 
     '/velocities/groundspeed-kt': (value) => {
@@ -61,7 +61,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   function resetTelemetry() {
     altitudeFt.value = null
     airspeedKt.value = null
-    headingDeg.value = null
+    magneticHeadingDeg.value = null
     groundspeedKt.value = null
     verticalSpeedFpm.value = null
     pitchDeg.value = null
@@ -136,7 +136,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   return {
     altitudeFt,
     airspeedKt,
-    headingDeg,
+    magneticHeadingDeg,
     groundspeedKt,
     verticalSpeedFpm,
     pitchDeg,

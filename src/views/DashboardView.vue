@@ -70,7 +70,7 @@ const primaryFlightTelemetry = computed<TelemetryItem[]>(() => [
   },
   {
     label: 'Magnetic Heading',
-    value: flightgear.headingDeg,
+    value: flightgear.magneticHeadingDeg,
     unit: '°',
     decimals: 0,
   },
