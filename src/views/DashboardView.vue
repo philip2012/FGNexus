@@ -14,6 +14,8 @@
               FlightGear:
               <span class="font-semibold"> {{ connectionLabel }} </span>
             </span>
+
+            <span class="text-slate-500"> · {{ telemetryStatusLabel }} </span>
           </div>
         </div>
 
@@ -50,7 +52,7 @@
 <script setup lang="ts">
 import TelemetryPanel from '@/components/TelemetryPanel.vue'
 import type { TelemetryItem } from '@/types/telemetry'
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useFlightGearStore } from '@/stores/flightgear'
 
 const flightgear = useFlightGearStore()
@@ -161,6 +163,62 @@ const canConnect = computed(
 )
 
 const canDisconnect = computed(() => flightgear.connectionState === 'connected')
+
+const now = ref(Date.now())
+
+let freshnessTimer: number | undefined
+
+onMounted(() => {
+  freshnessTimer = window.setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (freshnessTimer !== undefined) {
+    window.clearInterval(freshnessTimer)
+  }
+})
+
+const telemetryAgeMs = computed(() => {
+  if (flightgear.lastTelemetryUpdate === null) {
+    return null
+  }
+
+  return now.value - flightgear.lastTelemetryUpdate
+})
+
+const telemetryStatus = computed(() => {
+  if (flightgear.connectionState !== 'connected') {
+    return 'unavailable'
+  }
+
+  if (telemetryAgeMs.value === null) {
+    return 'waiting'
+  }
+
+  if (telemetryAgeMs.value <= 3000) {
+    return 'live'
+  }
+
+  return 'stale'
+})
+
+const telemetryStatusLabel = computed(() => {
+  switch (telemetryStatus.value) {
+    case 'live':
+      return 'Live'
+
+    case 'stale':
+      return 'Telemetry stale'
+
+    case 'waiting':
+      return 'Waiting for telemetry'
+
+    default:
+      return 'No telemetry'
+  }
+})
 </script>
 
 <style scoped></style>
