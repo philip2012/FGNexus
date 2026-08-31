@@ -21,7 +21,7 @@
             {{ formatValue(item) }}
           </span>
 
-          <span class="ml-1 text-xs text-slate-500">
+          <span v-if="item.value !== null" class="ml-1 text-xs text-slate-500">
             {{ item.unit }}
           </span>
         </div>
@@ -41,6 +41,10 @@ interface Props {
 defineProps<Props>()
 
 function formatValue(item: TelemetryItem) {
+  if (item.value === null) {
+    return '—'
+  }
+
   const formatted = item.value.toLocaleString(undefined, {
     minimumFractionDigits: item.decimals ?? 0,
     maximumFractionDigits: item.decimals ?? 0,

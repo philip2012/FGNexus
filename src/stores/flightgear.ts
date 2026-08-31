@@ -3,17 +3,17 @@ import { defineStore } from 'pinia'
 import type { FlightGearConnectionState } from '@/types/flightgear-connection'
 
 export const useFlightGearStore = defineStore('flightgear', () => {
-  const altitudeFt = ref(10000)
-  const airspeedKt = ref(250)
-  const headingDeg = ref(180)
+  const altitudeFt = ref<number | null>(null)
+  const airspeedKt = ref<number | null>(null)
+  const headingDeg = ref<number | null>(null)
 
-  const groundspeedKt = ref(240)
-  const verticalSpeedFpm = ref(500)
-  const pitchDeg = ref(3)
+  const groundspeedKt = ref<number | null>(null)
+  const verticalSpeedFpm = ref<number | null>(null)
+  const pitchDeg = ref<number | null>(null)
 
-  const latitudeDeg = ref(10.8)
-  const longitudeDeg = ref(106.6)
-  const trackDeg = ref(182)
+  const latitudeDeg = ref<number | null>(null)
+  const longitudeDeg = ref<number | null>(null)
+  const trackDeg = ref<number | null>(null)
 
   type PropertyHandler = (value: unknown) => void
 
@@ -58,6 +58,18 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   const connectionState = ref<FlightGearConnectionState>('disconnected')
   let socket: WebSocket | null = null
 
+  function resetTelemetry() {
+    altitudeFt.value = null
+    airspeedKt.value = null
+    headingDeg.value = null
+    groundspeedKt.value = null
+    verticalSpeedFpm.value = null
+    pitchDeg.value = null
+    latitudeDeg.value = null
+    longitudeDeg.value = null
+    trackDeg.value = null
+  }
+
   function subscribeTo(path: string) {
     const node = path.startsWith('/') ? path.slice(1) : path
 
@@ -74,6 +86,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       return
     }
     connectionState.value = 'connecting'
+    resetTelemetry()
     socket = new WebSocket('ws://localhost:5480/PropertyListener')
 
     socket.onopen = () => {
@@ -101,7 +114,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       if (connectionState.value !== 'error') {
         connectionState.value = 'disconnected'
       }
-
+      resetTelemetry()
       socket = null
     }
 

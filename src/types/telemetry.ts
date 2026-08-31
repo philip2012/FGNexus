@@ -1,6 +1,6 @@
 export interface TelemetryItem {
   label: string
-  value: number
+  value: number | null
   unit: string
   decimals?: number
   signed?: boolean
