@@ -6,16 +6,28 @@
       >
         <div>
           <h1 class="text-3xl font-bold tracking-tight">FG Nexus</h1>
-
           <div class="mt-2 flex items-center gap-2 text-sm text-slate-300">
             <span class="h-2.5 w-2.5 rounded-full" :class="connectionClass"></span>
 
             <span>
               FlightGear:
-              <span class="font-semibold"> {{ connectionLabel }} </span>
+              <span class="font-semibold">
+                {{ connectionLabel }}
+              </span>
             </span>
 
-            <span class="text-slate-500"> · {{ telemetryStatusLabel }} </span>
+            <span class="text-slate-500">·</span>
+
+            <span :class="telemetryStatusClass">
+              {{ telemetryStatusLabel }}
+            </span>
+
+            <span
+              v-if="telemetryAgeLabel && telemetryStatus !== 'unavailable'"
+              class="text-slate-500"
+            >
+              · {{ telemetryAgeLabel }}
+            </span>
           </div>
         </div>
 
@@ -185,7 +197,7 @@ const telemetryAgeMs = computed(() => {
     return null
   }
 
-  return now.value - flightgear.lastTelemetryUpdate
+  return Math.max(0, now.value - flightgear.lastTelemetryUpdate)
 })
 
 const telemetryStatus = computed(() => {
@@ -218,6 +230,36 @@ const telemetryStatusLabel = computed(() => {
     default:
       return 'No telemetry'
   }
+})
+
+const telemetryStatusClass = computed(() => {
+  switch (telemetryStatus.value) {
+    case 'live':
+      return 'text-emerald-400'
+
+    case 'stale':
+      return 'text-amber-400'
+
+    case 'waiting':
+      return 'text-slate-400'
+
+    default:
+      return 'text-slate-500'
+  }
+})
+
+const telemetryAgeLabel = computed(() => {
+  if (telemetryAgeMs.value === null) {
+    return null
+  }
+
+  const seconds = Math.floor(telemetryAgeMs.value / 1000)
+
+  if (seconds === 0) {
+    return 'just now'
+  }
+
+  return `${seconds}s ago`
 })
 </script>
 

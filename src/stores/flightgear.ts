@@ -58,6 +58,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   }
 
   const connectionState = ref<FlightGearConnectionState>('disconnected')
+  let disconnectTimer: number | undefined
   let socket: WebSocket | null = null
 
   function resetTelemetry() {
@@ -88,6 +89,10 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     if (socket && socket.readyState !== WebSocket.CLOSED) {
       return
     }
+    if (disconnectTimer !== undefined) {
+      window.clearTimeout(disconnectTimer)
+      disconnectTimer = undefined
+    }
     connectionState.value = 'connecting'
     resetTelemetry()
     socket = new WebSocket('ws://localhost:5480/PropertyListener')
@@ -115,9 +120,15 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     }
 
     socket.onclose = () => {
+      if (disconnectTimer !== undefined) {
+        window.clearTimeout(disconnectTimer)
+        disconnectTimer = undefined
+      }
+
       if (connectionState.value !== 'error') {
         connectionState.value = 'disconnected'
       }
+
       resetTelemetry()
       socket = null
     }
@@ -135,6 +146,14 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
     connectionState.value = 'disconnecting'
     socket.close()
+
+    disconnectTimer = window.setTimeout(() => {
+      if (connectionState.value === 'disconnecting') {
+        resetTelemetry()
+        socket = null
+        connectionState.value = 'disconnected'
+      }
+    }, 1500)
   }
 
   return {
