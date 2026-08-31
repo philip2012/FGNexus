@@ -1,17 +1,16 @@
 <template>
-  <TelemetryPanel :telemetry="telemetry" />
+  <TelemetryPanel title="Primary Flight" :telemetry="primaryFlightTelemetry" />
+
+  <TelemetryPanel title="Motion" :telemetry="primaryFlightTelemetry" />
+
+  <TelemetryPanel title="Position" :telemetry="primaryFlightTelemetry" />
 </template>
 
 <script setup lang="ts">
 import TelemetryPanel from '@/components/TelemetryPanel.vue'
+import type { TelemetryItem } from '@/types/telemetry'
 
-interface TelemetryItem {
-  label: string
-  value: number
-  unit: string
-}
-
-const telemetry: TelemetryItem[] = [
+const primaryFlightTelemetry: TelemetryItem[] = [
   {
     label: 'Altitude',
     value: 10000,
