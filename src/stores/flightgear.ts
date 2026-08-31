@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import type { FlightGearConnectionState } from '@/types/flightgear-connection'
 
 export const useFlightGearStore = defineStore('flightgear', () => {
   const altitudeFt = ref(10000)
@@ -54,7 +55,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     },
   }
 
-  const connected = ref(false)
+  const connectionState = ref<FlightGearConnectionState>('disconnected')
   let socket: WebSocket | null = null
 
   function subscribeTo(path: string) {
@@ -72,10 +73,11 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     if (socket && socket.readyState !== WebSocket.CLOSED) {
       return
     }
+    connectionState.value = 'connecting'
     socket = new WebSocket('ws://localhost:5480/PropertyListener')
 
     socket.onopen = () => {
-      connected.value = true
+      connectionState.value = 'connected'
 
       for (const path of Object.keys(propertyHandlers)) {
         subscribeTo(path)
@@ -96,18 +98,23 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     }
 
     socket.onclose = () => {
-      connected.value = false
+      connectionState.value = 'disconnected'
       socket = null
     }
 
     socket.onerror = (error) => {
       console.error('FlightGear WebSocket error:', error)
+      connectionState.value = 'error'
     }
   }
 
   function disconnect() {
-    socket?.close()
-    connected.value = false
+    if (!socket) {
+      return
+    }
+
+    connectionState.value = 'disconnecting'
+    socket.close()
   }
 
   return {
@@ -121,7 +128,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     longitudeDeg,
     trackDeg,
 
-    connected,
+    connectionState,
     connect,
     disconnect,
   }

@@ -8,32 +8,27 @@
           <h1 class="text-3xl font-bold tracking-tight">FG Nexus</h1>
 
           <div class="mt-2 flex items-center gap-2 text-sm text-slate-300">
-            <span
-              class="h-2.5 w-2.5 rounded-full"
-              :class="flightgear.connected ? 'bg-emerald-400' : 'bg-slate-600'"
-            ></span>
+            <span class="h-2.5 w-2.5 rounded-full" :class="connectionClass"></span>
 
             <span>
               FlightGear:
-              <span class="font-semibold">{{
-                flightgear.connected ? 'Connected' : 'Disconnected'
-              }}</span>
+              <span class="font-semibold"> {{ connectionLabel }} </span>
             </span>
           </div>
         </div>
 
         <div class="flex gap-3">
           <button
-            :disabled="flightgear.connected"
-            class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed cursor-pointer disabled:opacity-40"
+            :disabled="!canConnect"
+            class="cursor-pointer rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             @click="flightgear.connect()"
           >
             Connect
           </button>
 
           <button
-            :disabled="!flightgear.connected"
-            class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed cursor-pointer disabled:opacity-40"
+            :disabled="!canDisconnect"
+            class="cursor-pointer rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             @click="flightgear.disconnect()"
           >
             Disconnect
@@ -124,6 +119,48 @@ const positionTelemetry = computed<TelemetryItem[]>(() => [
     decimals: 0,
   },
 ])
+
+const connectionLabel = computed(() => {
+  switch (flightgear.connectionState) {
+    case 'connecting':
+      return 'Connecting...'
+
+    case 'connected':
+      return 'Connected'
+
+    case 'disconnecting':
+      return 'Disconnecting...'
+
+    case 'error':
+      return 'Connection error'
+
+    default:
+      return 'Disconnected'
+  }
+})
+
+const connectionClass = computed(() => {
+  switch (flightgear.connectionState) {
+    case 'connected':
+      return 'bg-emerald-400'
+
+    case 'connecting':
+    case 'disconnecting':
+      return 'bg-amber-400'
+
+    case 'error':
+      return 'bg-red-400'
+
+    default:
+      return 'bg-slate-600'
+  }
+})
+
+const canConnect = computed(
+  () => flightgear.connectionState === 'disconnected' || flightgear.connectionState === 'error',
+)
+
+const canDisconnect = computed(() => flightgear.connectionState === 'connected')
 </script>
 
 <style scoped></style>
