@@ -88,11 +88,17 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
     socket.onclose = () => {
       connected.value = false
+      socket = null
     }
 
     socket.onerror = (error) => {
       console.error('FlightGear WebSocket error:', error)
     }
+  }
+
+  function disconnect() {
+    socket?.close()
+    connected.value = false
   }
 
   return {
@@ -108,5 +114,6 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
     connected,
     connect,
+    disconnect,
   }
 })

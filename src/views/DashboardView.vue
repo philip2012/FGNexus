@@ -6,6 +6,7 @@
   <TelemetryPanel title="Position" :telemetry="positionTelemetry" />
 
   <button @click="flightgear.connect()">Connect</button>
+  <button @click="flightgear.disconnect()">Disconnect</button>
 
   <p>
     {{ flightgear.connected ? 'Connected' : 'Disconnected' }}
