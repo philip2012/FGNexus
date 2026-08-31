@@ -18,7 +18,7 @@
 
         <div class="text-right">
           <span class="text-lg font-semibold tabular-nums text-slate-100">
-            {{ item.value }}
+            {{ formatValue(item) }}
           </span>
 
           <span class="ml-1 text-xs text-slate-500">
@@ -39,6 +39,19 @@ interface Props {
 }
 
 defineProps<Props>()
+
+function formatValue(item: TelemetryItem) {
+  const formatted = item.value.toLocaleString(undefined, {
+    minimumFractionDigits: item.decimals ?? 0,
+    maximumFractionDigits: item.decimals ?? 0,
+  })
+
+  if (item.signed && item.value > 0) {
+    return `+${formatted}`
+  }
+
+  return formatted
+}
 </script>
 
 <style scoped></style>

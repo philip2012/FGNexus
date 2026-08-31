@@ -65,16 +65,19 @@ const primaryFlightTelemetry = computed<TelemetryItem[]>(() => [
     label: 'Altitude',
     value: flightgear.altitudeFt,
     unit: 'ft',
+    decimals: 0,
   },
   {
     label: 'Indicated Airspeed',
     value: flightgear.airspeedKt,
     unit: 'kt',
+    decimals: 0,
   },
   {
     label: 'Magnetic Heading',
     value: flightgear.headingDeg,
     unit: '°',
+    decimals: 0,
   },
 ])
 
@@ -83,16 +86,21 @@ const motionTelemetry = computed<TelemetryItem[]>(() => [
     label: 'Groundspeed',
     value: flightgear.groundspeedKt,
     unit: 'kt',
+    decimals: 0,
   },
   {
     label: 'Vertical Speed',
     value: flightgear.verticalSpeedFpm,
     unit: 'ft/min',
+    decimals: 0,
+    signed: true,
   },
   {
     label: 'Pitch',
     value: flightgear.pitchDeg,
     unit: '°',
+    decimals: 1,
+    signed: true,
   },
 ])
 
@@ -101,16 +109,19 @@ const positionTelemetry = computed<TelemetryItem[]>(() => [
     label: 'Latitude',
     value: flightgear.latitudeDeg,
     unit: '°',
+    decimals: 4,
   },
   {
     label: 'Longitude',
     value: flightgear.longitudeDeg,
     unit: '°',
+    decimals: 4,
   },
   {
     label: 'Track',
     value: flightgear.trackDeg,
     unit: '°',
+    decimals: 0,
   },
 ])
 </script>
