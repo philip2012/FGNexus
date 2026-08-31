@@ -98,7 +98,10 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     }
 
     socket.onclose = () => {
-      connectionState.value = 'disconnected'
+      if (connectionState.value !== 'error') {
+        connectionState.value = 'disconnected'
+      }
+
       socket = null
     }
 
