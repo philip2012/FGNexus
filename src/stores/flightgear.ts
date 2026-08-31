@@ -59,6 +59,8 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
   const connectionState = ref<FlightGearConnectionState>('disconnected')
   let disconnectTimer: number | undefined
+  let shouldReconnect = false
+  let reconnectTimer: number | undefined
   let socket: WebSocket | null = null
 
   function resetTelemetry() {
@@ -74,15 +76,26 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     lastTelemetryUpdate.value = null
   }
 
-  function subscribeTo(path: string) {
+  function subscribeTo(path: string, targetSocket: WebSocket) {
     const node = path.startsWith('/') ? path.slice(1) : path
 
-    socket?.send(
+    targetSocket.send(
       JSON.stringify({
         command: 'addListener',
         node,
       }),
     )
+  }
+
+  function scheduleReconnect() {
+    if (!shouldReconnect || reconnectTimer !== undefined) {
+      return
+    }
+
+    reconnectTimer = window.setTimeout(() => {
+      reconnectTimer = undefined
+      connect()
+    }, 2000)
   }
 
   function connect() {
@@ -93,19 +106,32 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       window.clearTimeout(disconnectTimer)
       disconnectTimer = undefined
     }
+    shouldReconnect = true
     connectionState.value = 'connecting'
     resetTelemetry()
-    socket = new WebSocket('ws://localhost:5480/PropertyListener')
+    const currentSocket = new WebSocket('ws://localhost:5480/PropertyListener')
+    socket = currentSocket
 
-    socket.onopen = () => {
+    currentSocket.onopen = () => {
+      if (socket !== currentSocket) {
+        return
+      }
+      if (reconnectTimer !== undefined) {
+        window.clearTimeout(reconnectTimer)
+        reconnectTimer = undefined
+      }
+
       connectionState.value = 'connected'
 
       for (const path of Object.keys(propertyHandlers)) {
-        subscribeTo(path)
+        subscribeTo(path, currentSocket)
       }
     }
 
-    socket.onmessage = (event) => {
+    currentSocket.onmessage = (event) => {
+      if (socket !== currentSocket) {
+        return
+      }
       try {
         const data = JSON.parse(event.data)
         const handler = propertyHandlers[data.path]
@@ -119,40 +145,61 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       }
     }
 
-    socket.onclose = () => {
+    currentSocket.onclose = () => {
+      if (socket !== currentSocket) {
+        return
+      }
       if (disconnectTimer !== undefined) {
         window.clearTimeout(disconnectTimer)
         disconnectTimer = undefined
       }
 
-      if (connectionState.value !== 'error') {
-        connectionState.value = 'disconnected'
-      }
-
       resetTelemetry()
       socket = null
+
+      if (shouldReconnect) {
+        connectionState.value = 'connecting'
+        scheduleReconnect()
+      } else {
+        connectionState.value = 'disconnected'
+      }
     }
 
-    socket.onerror = (error) => {
+    currentSocket.onerror = (error) => {
+      if (socket !== currentSocket) {
+        return
+      }
       console.error('FlightGear WebSocket error:', error)
       connectionState.value = 'error'
     }
   }
 
   function disconnect() {
+    shouldReconnect = false
+
+    if (reconnectTimer !== undefined) {
+      window.clearTimeout(reconnectTimer)
+      reconnectTimer = undefined
+    }
+
     if (!socket) {
+      connectionState.value = 'disconnected'
       return
     }
 
+    const currentSocket = socket
+
     connectionState.value = 'disconnecting'
-    socket.close()
+    currentSocket.close()
 
     disconnectTimer = window.setTimeout(() => {
-      if (connectionState.value === 'disconnecting') {
-        resetTelemetry()
-        socket = null
-        connectionState.value = 'disconnected'
+      if (socket !== currentSocket || connectionState.value !== 'disconnecting') {
+        return
       }
+
+      resetTelemetry()
+      socket = null
+      connectionState.value = 'disconnected'
     }, 1500)
   }
 

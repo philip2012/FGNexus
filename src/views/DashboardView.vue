@@ -45,7 +45,7 @@
             class="cursor-pointer rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             @click="flightgear.disconnect()"
           >
-            Disconnect
+            {{ disconnectLabel }}
           </button>
         </div>
       </header>
@@ -153,6 +153,14 @@ const connectionLabel = computed(() => {
   }
 })
 
+const disconnectLabel = computed(() => {
+  if (flightgear.connectionState === 'connecting' || flightgear.connectionState === 'error') {
+    return 'Cancel'
+  }
+
+  return 'Disconnect'
+})
+
 const connectionClass = computed(() => {
   switch (flightgear.connectionState) {
     case 'connected':
@@ -174,7 +182,12 @@ const canConnect = computed(
   () => flightgear.connectionState === 'disconnected' || flightgear.connectionState === 'error',
 )
 
-const canDisconnect = computed(() => flightgear.connectionState === 'connected')
+const canDisconnect = computed(
+  () =>
+    flightgear.connectionState === 'connecting' ||
+    flightgear.connectionState === 'connected' ||
+    flightgear.connectionState === 'error',
+)
 
 const now = ref(Date.now())
 
