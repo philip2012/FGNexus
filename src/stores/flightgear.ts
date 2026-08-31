@@ -14,10 +14,52 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   const longitudeDeg = ref(106.6)
   const trackDeg = ref(182)
 
+  type PropertyHandler = (value: unknown) => void
+
+  const propertyHandlers: Record<string, PropertyHandler> = {
+    '/position/altitude-ft': (value) => {
+      altitudeFt.value = Number(value)
+    },
+
+    '/velocities/airspeed-kt': (value) => {
+      airspeedKt.value = Number(value)
+    },
+
+    '/orientation/heading-deg': (value) => {
+      headingDeg.value = Number(value)
+    },
+
+    '/velocities/groundspeed-kt': (value) => {
+      groundspeedKt.value = Number(value)
+    },
+
+    '/velocities/vertical-speed-fps': (value) => {
+      verticalSpeedFpm.value = Number(value) * 60
+    },
+
+    '/orientation/pitch-deg': (value) => {
+      pitchDeg.value = Number(value)
+    },
+
+    '/position/latitude-deg': (value) => {
+      latitudeDeg.value = Number(value)
+    },
+
+    '/position/longitude-deg': (value) => {
+      longitudeDeg.value = Number(value)
+    },
+
+    '/orientation/track-deg': (value) => {
+      trackDeg.value = Number(value)
+    },
+  }
+
   const connected = ref(false)
   let socket: WebSocket | null = null
 
-  function subscribeTo(node: string) {
+  function subscribeTo(path: string) {
+    const node = path.startsWith('/') ? path.slice(1) : path
+
     socket?.send(
       JSON.stringify({
         command: 'addListener',
@@ -35,51 +77,18 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     socket.onopen = () => {
       connected.value = true
 
-      subscribeTo('position/altitude-ft')
-      subscribeTo('velocities/airspeed-kt')
-      subscribeTo('orientation/heading-deg')
-      subscribeTo('velocities/groundspeed-kt')
-      subscribeTo('velocities/vertical-speed-fps')
-      subscribeTo('orientation/pitch-deg')
-      subscribeTo('position/latitude-deg')
-      subscribeTo('position/longitude-deg')
-      subscribeTo('orientation/track-deg')
+      for (const path of Object.keys(propertyHandlers)) {
+        subscribeTo(path)
+      }
     }
 
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
+        const handler = propertyHandlers[data.path]
 
-        switch (data.path) {
-          case '/position/altitude-ft':
-            altitudeFt.value = Number(data.value)
-            break
-
-          case '/velocities/airspeed-kt':
-            airspeedKt.value = Number(data.value)
-            break
-
-          case '/orientation/heading-deg':
-            headingDeg.value = Number(data.value)
-            break
-          case '/velocities/groundspeed-kt':
-            groundspeedKt.value = Number(data.value)
-            break
-          case '/velocities/vertical-speed-fps':
-            verticalSpeedFpm.value = Number(data.value)
-            break
-          case '/orientation/pitch-deg':
-            pitchDeg.value = Number(data.value)
-            break
-          case '/position/latitude-deg':
-            latitudeDeg.value = Number(data.value)
-            break
-          case '/position/longitude-deg':
-            longitudeDeg.value = Number(data.value)
-            break
-          case '/orientation/track-deg':
-            trackDeg.value = Number(data.value)
-            break
+        if (handler) {
+          handler(data.value)
         }
       } catch (error) {
         console.error('Failed to parse FlightGear message:', error)
