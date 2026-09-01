@@ -93,6 +93,7 @@ const primaryFlightTelemetry = computed<TelemetryItem[]>(() => [
     value: flightgear.magneticHeadingDeg,
     unit: '°',
     decimals: 0,
+    padded: 3,
   },
 ])
 
@@ -144,6 +145,7 @@ const positionTelemetry = computed<TelemetryItem[]>(() => [
     value: flightgear.trackDeg,
     unit: '°',
     decimals: 0,
+    padded: 3,
   },
 ])
 

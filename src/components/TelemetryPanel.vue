@@ -45,10 +45,14 @@ function formatValue(item: TelemetryItem) {
     return '—'
   }
 
-  const formatted = item.value.toLocaleString(undefined, {
+  let formatted = item.value.toLocaleString(undefined, {
     minimumFractionDigits: item.decimals ?? 0,
     maximumFractionDigits: item.decimals ?? 0,
   })
+
+  if (item.padded) {
+    formatted = formatted.padStart(item.padded, '0')
+  }
 
   if (item.signed && item.value > 0) {
     return `+${formatted}`

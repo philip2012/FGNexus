@@ -4,4 +4,5 @@ export interface TelemetryItem {
   unit: string
   decimals?: number
   signed?: boolean
+  padded?: number
 }
