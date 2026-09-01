@@ -2,12 +2,12 @@
 
 An all-in-one web companion platform for the open-source flight simulator, FlightGear.
 
-FG Nexus is an independent, open-source project with the purpose of providing a modern web interface for interacting with and extending a FlightGear session.
+FG Nexus is an independent, open-source project focused on providing a modern web interface for interacting with and extending an active FlightGear session.
 
-The long-term goal is to add live telemetry, maps, flight planning, multiplayer tools, aircraft utilities, ATC, logging, and other companion features into one unified application.
+The long-term goal is to bring live telemetry, maps, flight planning, multiplayer tools, aircraft utilities, ATC, logging, developer tools, and other companion features into one unified application.
 
 > [!NOTE]
-> FG Nexus is currently in early development. Most planned features are not implemented at the moment.
+> FG Nexus is currently in early pre-alpha development. The telemetry dashboard is functional, but most planned features have not yet been implemented.
 
 ## Goals
 
@@ -27,35 +27,54 @@ FG Nexus is built around these core ideas:
 
 ## Planned Features
 
-**Core Navigation & Flight**  
+**Core Navigation & Flight**
 `Live Telemetry` • `Moving Map` • `Flight Planning` • `Airport & Nav Info`
 
-**Cockpit & Aircraft Controls**  
+**Cockpit & Aircraft Controls**
 `Radio Management` • `Autopilot Monitoring & Control` • `Aircraft Utilities` • `Weight & Balance` • `Checklists`
 
-**Environment & Session**  
+**Environment & Session**
 `Weather & Environment` • `Multiplayer Traffic` • `Flight Logging` • `Failure Management`
 
-**Integrations & Dev Tools**  
+**Integrations & Dev Tools**
 `Virtual Airline Tools` • `SimBrief Integration` • `Property-Tree Tools` • `AI-Assisted ATC`
 
 > [!NOTE]
-> The current feature set may change as the project continues to develop further.
+> The planned feature set may change as the project continues to develop.
+
+## Current Features
+
+The current pre-alpha implementation includes:
+
+- Live FlightGear telemetry through the PropertyListener WebSocket interface
+- Initial property hydration through FlightGear's HTTP property API
+- Primary flight, motion, position, and environment telemetry panels
+- Connection lifecycle states including connecting, connected, disconnecting, disconnected, and error
+- Automatic reconnection after unexpected FlightGear disconnects
+- Manual cancellation of reconnection attempts
+- Telemetry freshness monitoring and stale-data detection
+- Automatic clearing of unavailable or disconnected telemetry
+- Aviation-style heading and track formatting
+- Geographic coordinate formatting with N/S/E/W hemisphere indicators
+- Responsive telemetry dashboard layout
+- Unit-tested telemetry presentation and formatting
 
 ## Current Stack
 
-The initial application uses:
+The application currently uses:
 
 - Vue 3
 - TypeScript
 - Vite
 - Vue Router
 - Pinia
+- Tailwind CSS
 - Vitest
+- Vue Test Utils
 - ESLint / Oxlint
 - Prettier
 
-Additional backend and FlightGear integration technologies will be introduced if needed.
+Additional backend and FlightGear integration technologies will be introduced as the project expands.
 
 ## Development
 
@@ -75,6 +94,30 @@ npm install
 npm run dev
 ```
 
+### Type-check the project
+
+```bash
+npm run type-check
+```
+
+### Lint the project
+
+```bash
+npm run lint
+```
+
+### Run unit tests
+
+```bash
+npm run test:unit -- --run
+```
+
+### Build for production
+
+```bash
+npm run build
+```
+
 ### Format the codebase
 
 ```bash
@@ -88,13 +131,59 @@ npm run format
 
 ### Pre-alpha
 
-Our current milestone is establishing the Vue application structure and building the first telemetry dashboard.
+FG Nexus has completed its first functional telemetry-dashboard milestone.
 
-Live FlightGear integration will be introduced after the initial frontend is in place and functional.
+The current application can connect directly to a running FlightGear instance, retrieve an initial telemetry snapshot, receive live property updates, monitor telemetry freshness, and recover automatically from unexpected connection loss.
+
+Current telemetry includes:
+
+- Altitude
+- Indicated airspeed
+- Mach
+- Magnetic heading
+- Groundspeed
+- Vertical speed
+- Pitch
+- Roll
+- Latitude and longitude
+- Ground track
+- Wind direction and speed
+- Outside air temperature
+
+The current direct browser-to-FlightGear connection is an early prototype and is not intended to represent the final networking architecture.
+
+Future work will expand beyond telemetry into navigation, maps, flight planning, aircraft controls, multiplayer functionality, developer tooling, and other FlightGear companion features.
+
+## Current FlightGear Integration
+
+The telemetry prototype currently communicates directly with FlightGear:
+
+```text
+FG Nexus Web
+    │
+    ├── HTTP property API
+    │     Initial telemetry hydration
+    │
+    └── PropertyListener WebSocket
+          Live property updates
+    │
+    ▼
+FlightGear
+```
+
+FlightGear must currently be running with its HTTP server enabled, for example:
+
+```bash
+fgfs --httpd=5480
+```
+
+The application connects to the local FlightGear PropertyListener endpoint and subscribes to supported property-tree nodes.
+
+This direct connection is intended primarily for early development and validation of the telemetry architecture.
 
 ## Architecture Direction
 
-FG Nexus is expected to evolve into three main layers:
+FG Nexus is expected to evolve into multiple layers:
 
 ```text
 FG Nexus Web
@@ -110,13 +199,35 @@ Local FlightGear Bridge
 FlightGear
 ```
 
-The local bridge is intended to handle simulator telemetry, FlightGear property access, simulator commands, connection management, and secure access from other devices.
+The planned local bridge is intended to handle simulator telemetry, FlightGear property access, simulator commands, connection management, device discovery, and secure access from other devices.
+
+Moving FlightGear communication behind a dedicated bridge will also allow FG Nexus to support functionality that is difficult or undesirable to expose directly through the browser.
+
+## Testing
+
+The project currently uses Vitest and Vue Test Utils.
+
+Current tests cover the application shell and telemetry presentation behavior, including:
+
+- Unavailable telemetry
+- Signed telemetry values
+- Aviation heading padding
+- Geographic coordinate formatting
+- Telemetry labels, units, and numeric rendering
+
+Run the test suite with:
+
+```bash
+npm run test:unit -- --run
+```
 
 ## Inspiration
 
 FG Nexus was partly inspired by the modernization work in `t3r/smweb-vue`, which rebuilt FlightGear's scenery database web application using a modern Vue-based stack.
 
 This got the project's author, Philips Nguyen, interested in applying his observations toward improving and expanding on FlightGear's Phi web interface, which led to the creation of FG Nexus.
+
+FG Nexus is an independent project and is not an official FlightGear project.
 
 ## License
 
