@@ -5,4 +5,5 @@ export interface TelemetryItem {
   decimals?: number
   signed?: boolean
   padded?: number
+  coordinate?: 'latitude' | 'longitude'
 }

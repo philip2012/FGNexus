@@ -45,13 +45,27 @@ function formatValue(item: TelemetryItem) {
     return '—'
   }
 
-  let formatted = item.value.toLocaleString(undefined, {
+  let value = item.value
+
+  if (item.coordinate) {
+    value = Math.abs(value)
+  }
+
+  let formatted = value.toLocaleString(undefined, {
     minimumFractionDigits: item.decimals ?? 0,
     maximumFractionDigits: item.decimals ?? 0,
   })
 
   if (item.padded) {
     formatted = formatted.padStart(item.padded, '0')
+  }
+
+  if (item.coordinate === 'latitude') {
+    return `${formatted}° ${item.value >= 0 ? 'N' : 'S'}`
+  }
+
+  if (item.coordinate === 'longitude') {
+    return `${formatted}° ${item.value >= 0 ? 'E' : 'W'}`
   }
 
   if (item.signed && item.value > 0) {

@@ -131,14 +131,16 @@ const positionTelemetry = computed<TelemetryItem[]>(() => [
   {
     label: 'Latitude',
     value: flightgear.latitudeDeg,
-    unit: '°',
+    unit: '',
     decimals: 4,
+    coordinate: 'latitude',
   },
   {
     label: 'Longitude',
     value: flightgear.longitudeDeg,
-    unit: '°',
+    unit: '',
     decimals: 4,
+    coordinate: 'longitude',
   },
   {
     label: 'Track',
