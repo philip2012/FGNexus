@@ -18,6 +18,10 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   const rollDeg = ref<number | null>(null)
   const mach = ref<number | null>(null)
 
+  const windDirectionDeg = ref<number | null>(null)
+  const windSpeedKt = ref<number | null>(null)
+  const outsideAirTempC = ref<number | null>(null)
+
   const lastTelemetryUpdate = ref<number | null>(null)
 
   type PropertyHandler = (value: unknown) => void
@@ -65,6 +69,18 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     '/velocities/mach': (value) => {
       mach.value = Number(value)
     },
+
+    '/environment/wind-from-heading-deg': (value) => {
+      windDirectionDeg.value = Number(value)
+    },
+
+    '/environment/wind-speed-kt': (value) => {
+      windSpeedKt.value = Number(value)
+    },
+
+    '/environment/temperature-degc': (value) => {
+      outsideAirTempC.value = Number(value)
+    },
   }
 
   const connectionState = ref<FlightGearConnectionState>('disconnected')
@@ -86,6 +102,40 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     lastTelemetryUpdate.value = null
     rollDeg.value = null
     mach.value = null
+    windDirectionDeg.value = null
+    windSpeedKt.value = null
+    outsideAirTempC.value = null
+  }
+
+  async function fetchProperty(path: string, targetSocket: WebSocket) {
+    try {
+      const response = await fetch(`http://localhost:5480/json${path}`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (socket !== targetSocket) {
+        return
+      }
+
+      const handler = propertyHandlers[path]
+
+      if (handler) {
+        handler(data.value)
+        lastTelemetryUpdate.value = Date.now()
+      }
+    } catch (error) {
+      console.error(`Failed to fetch FlightGear property ${path}:`, error)
+    }
+  }
+
+  async function fetchInitialTelemetry(targetSocket: WebSocket) {
+    for (const path of Object.keys(propertyHandlers)) {
+      await fetchProperty(path, targetSocket)
+    }
   }
 
   function subscribeTo(path: string, targetSocket: WebSocket) {
@@ -128,16 +178,14 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       if (socket !== currentSocket) {
         return
       }
-      if (reconnectTimer !== undefined) {
-        window.clearTimeout(reconnectTimer)
-        reconnectTimer = undefined
-      }
 
       connectionState.value = 'connected'
 
       for (const path of Object.keys(propertyHandlers)) {
         subscribeTo(path, currentSocket)
       }
+
+      void fetchInitialTelemetry(currentSocket)
     }
 
     currentSocket.onmessage = (event) => {
@@ -227,6 +275,9 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     trackDeg,
     rollDeg,
     mach,
+    windDirectionDeg,
+    windSpeedKt,
+    outsideAirTempC,
 
     connectionState,
     lastTelemetryUpdate,

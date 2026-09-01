@@ -56,6 +56,8 @@
         <TelemetryPanel title="Motion" :telemetry="motionTelemetry" />
 
         <TelemetryPanel title="Position" :telemetry="positionTelemetry" />
+
+        <TelemetryPanel title="Environment" :telemetry="environmentTelemetry" />
       </section>
     </div>
   </main>
@@ -291,6 +293,29 @@ const telemetryAgeLabel = computed(() => {
 
   return `${seconds}s ago`
 })
+
+const environmentTelemetry = computed<TelemetryItem[]>(() => [
+  {
+    label: 'Wind Direction',
+    value: flightgear.windDirectionDeg,
+    unit: '°',
+    decimals: 0,
+    padded: 3,
+  },
+  {
+    label: 'Wind Speed',
+    value: flightgear.windSpeedKt,
+    unit: 'kt',
+    decimals: 0,
+  },
+  {
+    label: 'Outside Air Temperature',
+    value: flightgear.outsideAirTempC,
+    unit: '°C',
+    decimals: 1,
+    signed: true,
+  },
+])
 </script>
 
 <style scoped></style>
