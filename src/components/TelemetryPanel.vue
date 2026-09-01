@@ -21,7 +21,7 @@
             {{ formatValue(item) }}
           </span>
 
-          <span v-if="item.value !== null" class="ml-1 text-xs text-slate-500">
+          <span v-if="item.value !== null && item.unit" class="ml-1 text-xs text-slate-500">
             {{ item.unit }}
           </span>
         </div>

@@ -15,6 +15,9 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   const longitudeDeg = ref<number | null>(null)
   const trackDeg = ref<number | null>(null)
 
+  const rollDeg = ref<number | null>(null)
+  const mach = ref<number | null>(null)
+
   const lastTelemetryUpdate = ref<number | null>(null)
 
   type PropertyHandler = (value: unknown) => void
@@ -55,6 +58,13 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     '/orientation/track-deg': (value) => {
       trackDeg.value = Number(value)
     },
+    '/orientation/roll-deg': (value) => {
+      rollDeg.value = Number(value)
+    },
+
+    '/velocities/mach': (value) => {
+      mach.value = Number(value)
+    },
   }
 
   const connectionState = ref<FlightGearConnectionState>('disconnected')
@@ -74,6 +84,8 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     longitudeDeg.value = null
     trackDeg.value = null
     lastTelemetryUpdate.value = null
+    rollDeg.value = null
+    mach.value = null
   }
 
   function subscribeTo(path: string, targetSocket: WebSocket) {
@@ -213,6 +225,8 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     latitudeDeg,
     longitudeDeg,
     trackDeg,
+    rollDeg,
+    mach,
 
     connectionState,
     lastTelemetryUpdate,

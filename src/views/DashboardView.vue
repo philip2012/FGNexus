@@ -83,6 +83,12 @@ const primaryFlightTelemetry = computed<TelemetryItem[]>(() => [
     decimals: 0,
   },
   {
+    label: 'Mach',
+    value: flightgear.mach,
+    unit: '',
+    decimals: 3,
+  },
+  {
     label: 'Magnetic Heading',
     value: flightgear.magneticHeadingDeg,
     unit: '°',
@@ -107,6 +113,13 @@ const motionTelemetry = computed<TelemetryItem[]>(() => [
   {
     label: 'Pitch',
     value: flightgear.pitchDeg,
+    unit: '°',
+    decimals: 1,
+    signed: true,
+  },
+  {
+    label: 'Roll',
+    value: flightgear.rollDeg,
     unit: '°',
     decimals: 1,
     signed: true,
