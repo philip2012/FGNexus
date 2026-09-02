@@ -23,7 +23,6 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   const outsideAirTempC = ref<number | null>(null)
 
   const lastTelemetryUpdate = ref<number | null>(null)
-
   type PropertyHandler = (value: unknown) => void
 
   const propertyHandlers: Record<string, PropertyHandler> = {
@@ -84,7 +83,10 @@ export const useFlightGearStore = defineStore('flightgear', () => {
   }
 
   const connectionState = ref<FlightGearConnectionState>('disconnected')
+  const HEARTBEAT_PATH = '/sim/time/utc/second'
+
   let disconnectTimer: number | undefined
+  let heartbeatTimer: number | undefined
   let shouldReconnect = false
   let reconnectTimer: number | undefined
   let socket: WebSocket | null = null
@@ -125,7 +127,6 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
       if (handler) {
         handler(data.value)
-        lastTelemetryUpdate.value = Date.now()
       }
     } catch (error) {
       console.error(`Failed to fetch FlightGear property ${path}:`, error)
@@ -149,6 +150,36 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     )
   }
 
+  function stopHeartbeat() {
+    if (heartbeatTimer !== undefined) {
+      window.clearInterval(heartbeatTimer)
+      heartbeatTimer = undefined
+    }
+  }
+
+  function requestHeartbeat(targetSocket: WebSocket) {
+    if (socket !== targetSocket || targetSocket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    targetSocket.send(
+      JSON.stringify({
+        command: 'get',
+        node: HEARTBEAT_PATH.slice(1),
+      }),
+    )
+  }
+
+  function startHeartbeat(targetSocket: WebSocket) {
+    stopHeartbeat()
+
+    requestHeartbeat(targetSocket)
+
+    heartbeatTimer = window.setInterval(() => {
+      requestHeartbeat(targetSocket)
+    }, 1000)
+  }
+
   function scheduleReconnect() {
     if (!shouldReconnect || reconnectTimer !== undefined) {
       return
@@ -164,13 +195,18 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     if (socket && socket.readyState !== WebSocket.CLOSED) {
       return
     }
+
     if (disconnectTimer !== undefined) {
       window.clearTimeout(disconnectTimer)
       disconnectTimer = undefined
     }
+
+    stopHeartbeat()
+
     shouldReconnect = true
     connectionState.value = 'connecting'
     resetTelemetry()
+
     const currentSocket = new WebSocket('ws://localhost:5480/PropertyListener')
     socket = currentSocket
 
@@ -181,24 +217,32 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
       connectionState.value = 'connected'
 
+      // Opening the socket proves that it is alive at this moment.
+      lastTelemetryUpdate.value = Date.now()
+
       for (const path of Object.keys(propertyHandlers)) {
         subscribeTo(path, currentSocket)
       }
 
       void fetchInitialTelemetry(currentSocket)
+      startHeartbeat(currentSocket)
     }
 
     currentSocket.onmessage = (event) => {
       if (socket !== currentSocket) {
         return
       }
+
+      // Any inbound WebSocket message proves the PropertyListener
+      // connection is still responsive.
+      lastTelemetryUpdate.value = Date.now()
+
       try {
         const data = JSON.parse(event.data)
         const handler = propertyHandlers[data.path]
 
         if (handler) {
           handler(data.value)
-          lastTelemetryUpdate.value = Date.now()
         }
       } catch (error) {
         console.error('Failed to parse FlightGear message:', error)
@@ -209,6 +253,9 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       if (socket !== currentSocket) {
         return
       }
+
+      stopHeartbeat()
+
       if (disconnectTimer !== undefined) {
         window.clearTimeout(disconnectTimer)
         disconnectTimer = undefined
@@ -229,6 +276,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
       if (socket !== currentSocket) {
         return
       }
+
       console.error('FlightGear WebSocket error:', error)
       connectionState.value = 'error'
     }
@@ -236,6 +284,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
   function disconnect() {
     shouldReconnect = false
+    stopHeartbeat()
 
     if (reconnectTimer !== undefined) {
       window.clearTimeout(reconnectTimer)
