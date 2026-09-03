@@ -1,5 +1,7 @@
 # FG Nexus
 
+[![CI](https://github.com/philip2012/FGNexus/actions/workflows/ci.yml/badge.svg)](https://github.com/philip2012/FGNexus/actions/workflows/ci.yml)
+
 An all-in-one web companion platform for the open-source flight simulator, FlightGear.
 
 FG Nexus is an independent, open-source project focused on providing a modern web interface for interacting with and extending an active FlightGear session.
@@ -80,7 +82,7 @@ Additional backend and FlightGear integration technologies will be introduced as
 
 ### Requirements
 
-**Includes:** Node.js 20.19+ or 22.12+, npm
+**Includes:** Node.js 22.18+ within the Node 22 release line, or Node.js 24.12+, npm
 
 ### Install dependencies
 
@@ -117,6 +119,16 @@ npm run test:unit -- --run
 ```bash
 npm run build
 ```
+
+### Run all validation checks
+
+Before pushing changes, run the complete local validation gate:
+
+```bash
+npm run check
+```
+
+This checks formatting, TypeScript types, lint rules, unit tests, and the production build.
 
 ### Format the codebase
 

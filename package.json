@@ -11,10 +11,16 @@
     "test:unit": "vitest",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "lint": "run-s \"lint:*\"",
-    "lint:oxlint": "oxlint . --fix",
-    "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/"
+    "lint": "run-s lint:oxlint lint:eslint",
+    "lint:oxlint": "oxlint .",
+    "lint:eslint": "eslint . --cache",
+    "format": "prettier --write \"src/**/*.{vue,ts,css}\" \"vite.config.ts\" \".github/**/*.yml\" \"README.md\" \"package.json\"",
+    "lint:fix": "run-s lint:oxlint:fix lint:eslint:fix",
+    "lint:oxlint:fix": "oxlint . --fix",
+    "lint:eslint:fix": "eslint . --fix --cache",
+    "format:check": "prettier --check \"src/**/*.{vue,ts,css}\" \"vite.config.ts\" \".github/**/*.yml\" \"README.md\" \"package.json\"",
+    "test:unit:run": "vitest --run",
+    "check": "run-s format:check type-check lint test:unit:run build-only"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

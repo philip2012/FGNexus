@@ -9,27 +9,45 @@ on:
     branches:
       - main
 
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    name: Validate
+    name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - 22.18.0
+          - 24.12.0
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.18.0'
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Type-check
         run: npm run type-check
@@ -38,7 +56,37 @@ jobs:
         run: npm run lint
 
       - name: Run unit tests
-        run: npm run test:unit -- --run
+        run: npm run test:unit:run
 
       - name: Build
-        run: npm run build
+        run: npm run build-only
+
+      - name: Verify clean working tree
+        run: |
+          test -z "$(git status --porcelain --untracked-files=all)" || {
+            git status --short
+            exit 1
+          }
+
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
