@@ -89,4 +89,38 @@ jobs:
         run: npm ci
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        shell: bash
+        run: |
+          set -o pipefail
+
+          for attempt in 1 2 3; do
+            echo "Audit attempt ${attempt}/3"
+
+            audit_log="$(mktemp)"
+
+            set +e
+            npm audit --audit-level=high 2>&1 | tee "$audit_log"
+            status=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$status" -eq 0 ]; then
+              rm -f "$audit_log"
+              exit 0
+            fi
+
+            if grep -Eqi "503 Service Unavailable|502 Bad Gateway|504 Gateway Timeout|429 Too Many Requests|network timeout|ECONNRESET|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket hang up|audit endpoint returned an error" "$audit_log"; then
+              rm -f "$audit_log"
+
+              if [ "$attempt" -lt 3 ]; then
+                sleep $((attempt * 10))
+                continue
+              fi
+
+              echo "npm audit failed after 3 attempts due to a transient registry/network error."
+            else
+              rm -f "$audit_log"
+              echo "npm audit reported a non-transient failure."
+            fi
+
+            exit "$status"
+          done
