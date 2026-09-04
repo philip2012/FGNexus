@@ -85,9 +85,6 @@ jobs:
           node-version: 22.22.2
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Audit dependencies
         shell: bash
         run: |
@@ -99,7 +96,7 @@ jobs:
             audit_log="$(mktemp)"
 
             set +e
-            npm audit --audit-level=high 2>&1 | tee "$audit_log"
+            npm audit --package-lock-only --audit-level=high 2>&1 | tee "$audit_log"
             status=${PIPESTATUS[0]}
             set -e
 
