@@ -82,7 +82,7 @@ Additional backend and FlightGear integration technologies will be introduced as
 
 ### Requirements
 
-**Includes:** Node.js 22.18+ within the Node 22 release line, or Node.js 24.12+, npm
+**Includes:** Node.js 22.22.2+ within the Node 22 release line, or Node.js 24.15.0+ within the Node 24 release line, npm
 
 ### Install dependencies
 
