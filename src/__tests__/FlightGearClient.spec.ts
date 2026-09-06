@@ -203,6 +203,27 @@ describe('FlightGearClient', () => {
     ])
   })
 
+  it('sends a set command when writing a property', () => {
+    const handlers = createHandlers()
+    const client = new FlightGearClient()
+
+    const connection = client.openPropertyListener(handlers)
+
+    const socket = FakeWebSocket.instances[0]
+
+    socket?.open()
+
+    connection.set('/controls/flight/aileron', 0.25)
+
+    expect(socket?.sentMessages).toEqual([
+      JSON.stringify({
+        command: 'set',
+        node: 'controls/flight/aileron',
+        value: 0.25,
+      }),
+    ])
+  })
+
   it('parses incoming PropertyListener messages', () => {
     const handlers = createHandlers()
     const client = new FlightGearClient()
@@ -279,5 +300,59 @@ describe('FlightGearClient', () => {
     expect(socket?.closeCalls).toBe(1)
     expect(socket?.readyState).toBe(FakeWebSocket.CLOSED)
     expect(connection.isOpen).toBe(false)
+  })
+
+  it('normalizes property paths without requiring a leading slash', () => {
+    const handlers = createHandlers()
+    const client = new FlightGearClient()
+
+    const connection = client.openPropertyListener(handlers)
+
+    const socket = FakeWebSocket.instances[0]
+
+    socket?.open()
+
+    connection.subscribe('position/altitude-ft')
+    connection.request('sim/time/utc/second')
+    connection.set('controls/gear/gear-down', true)
+
+    expect(socket?.sentMessages).toEqual([
+      JSON.stringify({
+        command: 'addListener',
+        node: 'position/altitude-ft',
+      }),
+      JSON.stringify({
+        command: 'get',
+        node: 'sim/time/utc/second',
+      }),
+      JSON.stringify({
+        command: 'set',
+        node: 'controls/gear/gear-down',
+        value: true,
+      }),
+    ])
+  })
+
+  it('normalizes HTTP property paths without a leading slash', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ value: 250 }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = new FlightGearClient({
+      httpBaseUrl: 'http://test:5480',
+    })
+
+    await client.fetchProperty('velocities/airspeed-kt')
+
+    expect(fetchMock).toHaveBeenCalledWith('http://test:5480/json/velocities/airspeed-kt')
   })
 })

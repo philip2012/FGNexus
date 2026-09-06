@@ -3,6 +3,8 @@ export interface FlightGearPropertyMessage {
   value: unknown
 }
 
+export type FlightGearPropertyValue = string | number | boolean
+
 export interface FlightGearConnectionHandlers {
   onOpen: () => void
   onMessage: (message: FlightGearPropertyMessage) => void
@@ -11,11 +13,16 @@ export interface FlightGearConnectionHandlers {
   onParseError?: (error: unknown) => void
 }
 
+function normalizePropertyPath(path: string): string {
+  return path.startsWith('/') ? path.slice(1) : path
+}
+
 export interface FlightGearPropertyConnection {
   readonly isOpen: boolean
 
   subscribe(path: string): void
   request(path: string): void
+  set(path: string, value: FlightGearPropertyValue): void
   close(): void
 }
 
@@ -34,7 +41,8 @@ export class FlightGearClient {
   }
 
   async fetchProperty(path: string): Promise<unknown> {
-    const response = await fetch(`${this.httpBaseUrl}/json${path}`)
+    const node = normalizePropertyPath(path)
+    const response = await fetch(`${this.httpBaseUrl}/json/${node}`)
 
     if (!response.ok) {
       throw new Error(`FlightGear HTTP request failed with status ${response.status}`)
@@ -96,23 +104,29 @@ export class FlightGearClient {
       },
 
       subscribe(path: string) {
-        const node = path.startsWith('/') ? path.slice(1) : path
-
         socket.send(
           JSON.stringify({
             command: 'addListener',
-            node,
+            node: normalizePropertyPath(path),
           }),
         )
       },
 
       request(path: string) {
-        const node = path.startsWith('/') ? path.slice(1) : path
-
         socket.send(
           JSON.stringify({
             command: 'get',
-            node,
+            node: normalizePropertyPath(path),
+          }),
+        )
+      },
+
+      set(path: string, value: FlightGearPropertyValue) {
+        socket.send(
+          JSON.stringify({
+            command: 'set',
+            node: normalizePropertyPath(path),
+            value,
           }),
         )
       },
