@@ -1,7 +1,12 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { FlightGearConnectionState } from '@/types/flightgear-connection'
-import { FlightGearClient, type FlightGearPropertyConnection } from '@/services/flightgear-client'
+import {
+  FlightGearClient,
+  type FlightGearPropertyConnection,
+  type FlightGearPropertyNode,
+  type FlightGearPropertyValue,
+} from '@/services/flightgear-client'
 
 export const useFlightGearStore = defineStore('flightgear', () => {
   const altitudeFt = ref<number | null>(null)
@@ -172,6 +177,22 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     }, 2000)
   }
 
+  async function readPropertyNode(path: string, depth = 1): Promise<FlightGearPropertyNode> {
+    return flightGearClient.fetchPropertyNode(path, depth)
+  }
+
+  async function readProperty(path: string): Promise<unknown> {
+    return flightGearClient.fetchProperty(path)
+  }
+
+  function setProperty(path: string, value: FlightGearPropertyValue) {
+    if (!connection?.isOpen) {
+      throw new Error('FlightGear is not connected')
+    }
+
+    connection.set(path, value)
+  }
+
   function connect() {
     if (connection) {
       return
@@ -319,5 +340,8 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     lastTelemetryUpdate,
     connect,
     disconnect,
+    readProperty,
+    readPropertyNode,
+    setProperty,
   }
 })
