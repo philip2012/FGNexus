@@ -111,8 +111,25 @@ const loadingRoot = ref(false)
 const treeError = ref<string | null>(null)
 const selectedPath = ref<string | null>(null)
 
+function comparePropertyNodes(a: FlightGearPropertyNode, b: FlightGearPropertyNode): number {
+  const nameComparison = a.name.localeCompare(b.name, undefined, {
+    sensitivity: 'base',
+    numeric: true,
+  })
+
+  if (nameComparison !== 0) {
+    return nameComparison
+  }
+
+  return a.index - b.index
+}
+
+function makeChildren(nodes: FlightGearPropertyNode[] | undefined): TreeEntry[] {
+  return [...(nodes ?? [])].sort(comparePropertyNodes).map(makeEntry)
+}
+
 function makeEntry(node: FlightGearPropertyNode): TreeEntry {
-  const children = (node.children ?? []).map(makeEntry)
+  const children = makeChildren(node.children)
 
   return {
     node,
@@ -160,7 +177,7 @@ async function loadChildren(entry: TreeEntry) {
     const node = await flightgear.readPropertyNode(entry.node.path, 1)
 
     entry.node = node
-    entry.children = (node.children ?? []).map(makeEntry)
+    entry.children = makeChildren(node.children)
     entry.loaded = true
   } catch (error) {
     treeError.value = getErrorMessage(error)

@@ -244,4 +244,60 @@ describe('PropertyTree', () => {
     expect(wrapper.find('[data-path="/controls"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Connect to FlightGear to browse the property tree.')
   })
+
+  it('sorts sibling property nodes alphabetically', async () => {
+    const flightgear = useFlightGearStore()
+
+    flightgear.connectionState = 'connected'
+
+    vi.spyOn(flightgear, 'readPropertyNode').mockResolvedValue({
+      path: '/',
+      name: '',
+      type: '-',
+      index: 0,
+      nChildren: 4,
+      children: [
+        {
+          path: '/velocities',
+          name: 'velocities',
+          type: '-',
+          index: 0,
+          nChildren: 0,
+        },
+        {
+          path: '/controls',
+          name: 'controls',
+          type: '-',
+          index: 0,
+          nChildren: 0,
+        },
+        {
+          path: '/sim',
+          name: 'sim',
+          type: '-',
+          index: 0,
+          nChildren: 0,
+        },
+        {
+          path: '/environment',
+          name: 'environment',
+          type: '-',
+          index: 0,
+          nChildren: 0,
+        },
+      ],
+    })
+
+    const wrapper = mount(PropertyTree, {
+      global: {
+        plugins: [pinia],
+      },
+    })
+
+    await flushPromises()
+
+    const paths = wrapper.findAll('[data-path]').map((row) => row.attributes('data-path'))
+
+    expect(paths).toEqual(['/controls', '/environment', '/sim', '/velocities'])
+  })
 })
