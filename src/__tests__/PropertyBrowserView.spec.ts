@@ -13,6 +13,7 @@ function mountView() {
       plugins: [pinia],
       stubs: {
         RouterLink: true,
+        PropertyTree: true,
       },
     },
   })

@@ -4,6 +4,7 @@ import type { FlightGearConnectionState } from '@/types/flightgear-connection'
 import {
   FlightGearClient,
   type FlightGearPropertyConnection,
+  type FlightGearPropertyNode,
   type FlightGearPropertyValue,
 } from '@/services/flightgear-client'
 
@@ -176,6 +177,10 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     }, 2000)
   }
 
+  async function readPropertyNode(path: string, depth = 1): Promise<FlightGearPropertyNode> {
+    return flightGearClient.fetchPropertyNode(path, depth)
+  }
+
   async function readProperty(path: string): Promise<unknown> {
     return flightGearClient.fetchProperty(path)
   }
@@ -336,6 +341,7 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     connect,
     disconnect,
     readProperty,
+    readPropertyNode,
     setProperty,
   }
 })
