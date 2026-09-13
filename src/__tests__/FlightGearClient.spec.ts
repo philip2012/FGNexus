@@ -355,4 +355,114 @@ describe('FlightGearClient', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('http://test:5480/json/velocities/airspeed-kt')
   })
+
+  it('fetches and parses a property node hierarchy', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          path: '/controls',
+          name: 'controls',
+          type: '-',
+          index: 0,
+          nChildren: 1,
+          children: [
+            {
+              path: '/controls/lighting',
+              name: 'lighting',
+              type: '-',
+              index: 0,
+              nChildren: 1,
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      ),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = new FlightGearClient({
+      httpBaseUrl: 'http://test:5480',
+    })
+
+    const node = await client.fetchPropertyNode('/controls', 1)
+
+    expect(fetchMock).toHaveBeenCalledWith('http://test:5480/json/controls?d=1')
+
+    expect(node.path).toBe('/controls')
+    expect(node.children).toHaveLength(1)
+    expect(node.children?.[0]?.path).toBe('/controls/lighting')
+  })
+
+  it('fetches the root property node', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          path: '/',
+          name: '',
+          type: '-',
+          index: 0,
+          nChildren: 0,
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      ),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = new FlightGearClient({
+      httpBaseUrl: 'http://test:5480',
+    })
+
+    await client.fetchPropertyNode('/', 1)
+
+    expect(fetchMock).toHaveBeenCalledWith('http://test:5480/json/?d=1')
+  })
+
+  it('rejects invalid property node children', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          path: '/controls',
+          name: 'controls',
+          type: '-',
+          index: 0,
+          nChildren: 1,
+          children: 'invalid',
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      ),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = new FlightGearClient({
+      httpBaseUrl: 'http://test:5480',
+    })
+
+    await expect(client.fetchPropertyNode('/controls', 1)).rejects.toThrow(
+      'FlightGear returned invalid property children',
+    )
+  })
 })

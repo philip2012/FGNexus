@@ -32,6 +32,12 @@
         </div>
 
         <div class="flex gap-3">
+          <RouterLink
+            to="/properties"
+            class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800"
+          >
+            Properties
+          </RouterLink>
           <button
             :disabled="!canConnect"
             class="cursor-pointer rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
@@ -68,6 +74,7 @@ import TelemetryPanel from '@/components/TelemetryPanel.vue'
 import type { TelemetryItem } from '@/types/telemetry'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useFlightGearStore } from '@/stores/flightgear'
+import { RouterLink } from 'vue-router'
 
 const flightgear = useFlightGearStore()
 

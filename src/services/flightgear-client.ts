@@ -13,6 +13,16 @@ export interface FlightGearConnectionHandlers {
   onParseError?: (error: unknown) => void
 }
 
+export interface FlightGearPropertyNode {
+  path: string
+  name: string
+  type: string
+  index: number
+  nChildren: number
+  value?: unknown
+  children?: FlightGearPropertyNode[]
+}
+
 function normalizePropertyPath(path: string): string {
   return path.startsWith('/') ? path.slice(1) : path
 }
@@ -29,6 +39,45 @@ export interface FlightGearPropertyConnection {
 interface FlightGearClientOptions {
   httpBaseUrl?: string
   propertyListenerUrl?: string
+}
+
+function parsePropertyNode(data: unknown): FlightGearPropertyNode {
+  if (
+    typeof data !== 'object' ||
+    data === null ||
+    !('path' in data) ||
+    typeof data.path !== 'string' ||
+    !('name' in data) ||
+    typeof data.name !== 'string' ||
+    !('type' in data) ||
+    typeof data.type !== 'string' ||
+    !('index' in data) ||
+    typeof data.index !== 'number' ||
+    !('nChildren' in data) ||
+    typeof data.nChildren !== 'number'
+  ) {
+    throw new Error('FlightGear returned an invalid property node')
+  }
+
+  let children: FlightGearPropertyNode[] | undefined
+
+  if ('children' in data) {
+    if (!Array.isArray(data.children)) {
+      throw new Error('FlightGear returned invalid property children')
+    }
+
+    children = data.children.map(parsePropertyNode)
+  }
+
+  return {
+    path: data.path,
+    name: data.name,
+    type: data.type,
+    index: data.index,
+    nChildren: data.nChildren,
+    ...('value' in data ? { value: data.value } : {}),
+    ...(children ? { children } : {}),
+  }
 }
 
 export class FlightGearClient {
@@ -59,6 +108,22 @@ export class FlightGearClient {
     }
 
     return (data as { value: unknown }).value
+  }
+
+  async fetchPropertyNode(path: string, depth = 1): Promise<FlightGearPropertyNode> {
+    const node = normalizePropertyPath(path)
+
+    const response = await fetch(
+      `${this.httpBaseUrl}/json/${node}?d=${Math.max(1, Math.floor(depth))}`,
+    )
+
+    if (!response.ok) {
+      throw new Error(`FlightGear HTTP request failed with status ${response.status}`)
+    }
+
+    const data: unknown = await response.json()
+
+    return parsePropertyNode(data)
   }
 
   openPropertyListener(handlers: FlightGearConnectionHandlers): FlightGearPropertyConnection {
