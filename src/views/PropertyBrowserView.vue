@@ -296,6 +296,23 @@ function parseNewValue(): FlightGearPropertyValue {
   }
 }
 
+async function confirmPropertyValue(
+  propertyPath: string,
+  expectedValue: FlightGearPropertyValue,
+): Promise<unknown> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 50))
+
+    const actualValue = await flightgear.readProperty(propertyPath)
+
+    if (Object.is(actualValue, expectedValue)) {
+      return actualValue
+    }
+  }
+
+  throw new Error('FlightGear did not confirm the requested property value')
+}
+
 async function read() {
   const propertyPath = path.value.trim()
 
@@ -335,9 +352,7 @@ async function write() {
 
     flightgear.setProperty(propertyPath, value)
 
-    await new Promise((resolve) => window.setTimeout(resolve, 100))
-
-    currentValue.value = await flightgear.readProperty(propertyPath)
+    currentValue.value = await confirmPropertyValue(propertyPath, value)
     hasCurrentValue.value = true
 
     success.value = 'Property updated successfully.'

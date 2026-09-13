@@ -300,4 +300,36 @@ describe('PropertyTree', () => {
 
     expect(paths).toEqual(['/controls', '/environment', '/sim', '/velocities'])
   })
+
+  it('shows an error and keeps a node collapsed when child loading fails', async () => {
+    const flightgear = useFlightGearStore()
+
+    flightgear.connectionState = 'connected'
+
+    vi.spyOn(flightgear, 'readPropertyNode').mockImplementation(async (path) => {
+      if (path === '/') {
+        return makeRoot()
+      }
+
+      throw new Error('Unable to load property children')
+    })
+
+    const wrapper = mount(PropertyTree, {
+      global: {
+        plugins: [pinia],
+      },
+    })
+
+    await flushPromises()
+
+    const controlsRow = wrapper.get('[data-path="/controls"]')
+
+    await controlsRow.get('[data-testid="tree-toggle"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Unable to load property children')
+    expect(wrapper.find('[data-path="/controls/lighting"]').exists()).toBe(false)
+
+    expect(controlsRow.text()).toContain('▶')
+  })
 })

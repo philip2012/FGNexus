@@ -17,6 +17,13 @@
       </button>
     </div>
 
+    <div
+      v-if="treeError && root"
+      class="border-b border-red-900/60 bg-red-950/40 px-4 py-2 text-xs text-red-300"
+    >
+      {{ treeError }}
+    </div>
+
     <div class="h-[65vh] overflow-auto font-mono text-sm">
       <div
         v-if="loadingRoot && !root"
@@ -165,9 +172,13 @@ async function loadRoot() {
   }
 }
 
-async function loadChildren(entry: TreeEntry) {
-  if (entry.loaded || entry.loading || entry.node.nChildren === 0) {
-    return
+async function loadChildren(entry: TreeEntry): Promise<boolean> {
+  if (entry.loaded || entry.node.nChildren === 0) {
+    return true
+  }
+
+  if (entry.loading) {
+    return false
   }
 
   entry.loading = true
@@ -179,20 +190,27 @@ async function loadChildren(entry: TreeEntry) {
     entry.node = node
     entry.children = makeChildren(node.children)
     entry.loaded = true
+
+    return true
   } catch (error) {
     treeError.value = getErrorMessage(error)
+    return false
   } finally {
     entry.loading = false
   }
 }
 
 async function toggleEntry(entry: TreeEntry) {
-  if (entry.node.nChildren === 0) {
+  if (entry.node.nChildren === 0 || entry.loading) {
     return
   }
 
   if (!entry.expanded && !entry.loaded) {
-    await loadChildren(entry)
+    const loaded = await loadChildren(entry)
+
+    if (!loaded) {
+      return
+    }
   }
 
   entry.expanded = !entry.expanded

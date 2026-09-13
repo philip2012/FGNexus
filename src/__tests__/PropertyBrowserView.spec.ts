@@ -163,4 +163,30 @@ describe('PropertyBrowserView', () => {
     expect(setProperty).toHaveBeenCalledWith('/controls/lighting/nav-lights', 'hello FlightGear')
     expect(wrapper.text()).toContain('Property updated successfully.')
   })
+
+  it('reports an error when FlightGear does not confirm a property write', async () => {
+    vi.useFakeTimers()
+
+    const flightgear = useFlightGearStore()
+
+    flightgear.connectionState = 'connected'
+
+    const setProperty = vi.spyOn(flightgear, 'setProperty').mockImplementation(() => {})
+
+    vi.spyOn(flightgear, 'readProperty').mockResolvedValue(true)
+
+    const wrapper = mountView()
+
+    await wrapper.get('#new-value').setValue('false')
+    await getButton(wrapper, 'Write').trigger('click')
+
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+
+    expect(setProperty).toHaveBeenCalledWith('/controls/lighting/nav-lights', false)
+
+    expect(wrapper.text()).toContain('FlightGear did not confirm the requested property value')
+
+    expect(wrapper.text()).not.toContain('Property updated successfully.')
+  })
 })
