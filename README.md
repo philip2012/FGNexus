@@ -50,18 +50,6 @@ The current pre-alpha implementation includes:
 
 - Live FlightGear telemetry through the PropertyListener WebSocket interface
 - Initial property hydration through FlightGear's HTTP property API
-- Primary flight, motion, position, and environment telemetry panels
-- Connection lifecycle states including connecting, connected, disconnecting, disconnected, and error
-- Automatic reconnection after unexpected FlightGear disconnects
-- Manual cancellation of reconnection attempts
-- Telemetry freshness monitoring and stale-data detection
-- Automatic clearing of unavailable or disconnected telemetry
-- Aviation-style heading and track formatting
-- Geographic coordinate formatting with N/S/E/W hemisphere indicators
-- Responsive telemetry dashboard layout
-- Unit-tested telemetry presentation and formatting
-- Live FlightGear telemetry through the PropertyListener WebSocket interface
-- Initial property hydration through FlightGear's HTTP property API
 - Hierarchical FlightGear property-tree browser with lazy-loaded navigation
 - Generic property reads and writes
 - Live property watching through dynamic PropertyListener subscriptions
