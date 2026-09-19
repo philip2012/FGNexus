@@ -313,12 +313,17 @@ describe('FlightGearClient', () => {
     socket?.open()
 
     connection.subscribe('position/altitude-ft')
+    connection.unsubscribe('position/altitude-ft')
     connection.request('sim/time/utc/second')
     connection.set('controls/gear/gear-down', true)
 
     expect(socket?.sentMessages).toEqual([
       JSON.stringify({
         command: 'addListener',
+        node: 'position/altitude-ft',
+      }),
+      JSON.stringify({
+        command: 'removeListener',
         node: 'position/altitude-ft',
       }),
       JSON.stringify({
@@ -464,5 +469,25 @@ describe('FlightGearClient', () => {
     await expect(client.fetchPropertyNode('/controls', 1)).rejects.toThrow(
       'FlightGear returned invalid property children',
     )
+  })
+
+  it('sends a removeListener command when unsubscribing', () => {
+    const handlers = createHandlers()
+    const client = new FlightGearClient()
+
+    const connection = client.openPropertyListener(handlers)
+
+    const socket = FakeWebSocket.instances[0]
+
+    socket?.open()
+
+    connection.unsubscribe('/position/altitude-ft')
+
+    expect(socket?.sentMessages).toEqual([
+      JSON.stringify({
+        command: 'removeListener',
+        node: 'position/altitude-ft',
+      }),
+    ])
   })
 })
