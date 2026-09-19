@@ -189,4 +189,109 @@ describe('PropertyBrowserView', () => {
 
     expect(wrapper.text()).not.toContain('Property updated successfully.')
   })
+
+  it('updates the current value from a live property subscription', async () => {
+    const flightgear = useFlightGearStore()
+
+    const readProperty = vi.spyOn(flightgear, 'readProperty').mockResolvedValue(100)
+
+    flightgear.connectionState = 'connected'
+
+    let liveHandler: ((value: unknown) => void) | undefined
+
+    const stop = vi.fn<() => void>()
+
+    const subscribeProperty = vi
+      .spyOn(flightgear, 'subscribeProperty')
+      .mockImplementation((propertyPath, handler) => {
+        liveHandler = handler
+        return stop
+      })
+
+    const wrapper = mountView()
+
+    void getButton(wrapper, 'Start live').trigger('click')
+    await wrapper.vm.$nextTick()
+    await flushPromises()
+
+    expect(readProperty).toHaveBeenCalledWith('/controls/lighting/nav-lights')
+
+    expect(wrapper.get('[data-testid="current-value"]').text()).toBe('100')
+
+    expect(subscribeProperty).toHaveBeenCalledWith(
+      '/controls/lighting/nav-lights',
+      expect.any(Function),
+    )
+
+    expect(wrapper.text()).toContain('Watching /controls/lighting/nav-lights')
+
+    liveHandler?.(250)
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('[data-testid="current-value"]').text()).toBe('250')
+
+    expect(wrapper.get('#property-path').attributes('disabled')).toBeDefined()
+
+    await getButton(wrapper, 'Stop live').trigger('click')
+
+    expect(stop).toHaveBeenCalledOnce()
+
+    expect(wrapper.text()).not.toContain('Watching /controls/lighting/nav-lights')
+  })
+
+  it('cleans up a live property subscription when unmounted', async () => {
+    const flightgear = useFlightGearStore()
+
+    flightgear.connectionState = 'connected'
+
+    const stop = vi.fn<() => void>()
+
+    vi.spyOn(flightgear, 'readProperty').mockResolvedValue(false)
+    vi.spyOn(flightgear, 'subscribeProperty').mockReturnValue(stop)
+
+    const wrapper = mountView()
+
+    await getButton(wrapper, 'Start live').trigger('click')
+
+    wrapper.unmount()
+
+    expect(stop).toHaveBeenCalledOnce()
+  })
+
+  it('does not overwrite a live update with an older initial snapshot', async () => {
+    const flightgear = useFlightGearStore()
+
+    flightgear.connectionState = 'connected'
+
+    let liveHandler: ((value: unknown) => void) | undefined
+    let resolveRead: ((value: unknown) => void) | undefined
+
+    const initialRead = new Promise<unknown>((resolve) => {
+      resolveRead = resolve
+    })
+
+    vi.spyOn(flightgear, 'readProperty').mockReturnValue(initialRead)
+
+    vi.spyOn(flightgear, 'subscribeProperty').mockImplementation((propertyPath, handler) => {
+      liveHandler = handler
+      return vi.fn<() => void>()
+    })
+
+    const wrapper = mountView()
+
+    await getButton(wrapper, 'Start live').trigger('click')
+
+    liveHandler?.(250)
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('[data-testid="current-value"]').text()).toBe('250')
+
+    resolveRead?.(100)
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="current-value"]').text()).toBe('250')
+  })
 })

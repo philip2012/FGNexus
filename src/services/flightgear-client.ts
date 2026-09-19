@@ -31,6 +31,7 @@ export interface FlightGearPropertyConnection {
   readonly isOpen: boolean
 
   subscribe(path: string): void
+  unsubscribe(path: string): void
   request(path: string): void
   set(path: string, value: FlightGearPropertyValue): void
   close(): void
@@ -172,6 +173,15 @@ export class FlightGearClient {
         socket.send(
           JSON.stringify({
             command: 'addListener',
+            node: normalizePropertyPath(path),
+          }),
+        )
+      },
+
+      unsubscribe(path: string) {
+        socket.send(
+          JSON.stringify({
+            command: 'removeListener',
             node: normalizePropertyPath(path),
           }),
         )

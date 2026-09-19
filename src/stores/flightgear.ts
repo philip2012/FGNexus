@@ -30,6 +30,21 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
   const lastTelemetryUpdate = ref<number | null>(null)
   type PropertyHandler = (value: unknown) => void
+  const propertySubscribers = new Map<string, Map<symbol, PropertyHandler>>()
+
+  function normalizeSubscriptionPath(path: string): string {
+    const trimmedPath = path.trim()
+
+    if (!trimmedPath) {
+      throw new Error('FlightGear property path is required')
+    }
+
+    return trimmedPath.startsWith('/') ? trimmedPath : `/${trimmedPath}`
+  }
+
+  function isTelemetryProperty(path: string): boolean {
+    return Object.prototype.hasOwnProperty.call(propertyHandlers, path)
+  }
 
   const propertyHandlers: Record<string, PropertyHandler> = {
     '/position/altitude-ft': (value) => {
@@ -137,6 +152,10 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
   async function fetchInitialTelemetry(targetConnection: FlightGearPropertyConnection) {
     for (const path of Object.keys(propertyHandlers)) {
+      if (connection !== targetConnection || !targetConnection.isOpen) {
+        return
+      }
+
       await fetchProperty(path, targetConnection)
     }
   }
@@ -185,6 +204,54 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     return flightGearClient.fetchProperty(path)
   }
 
+  function subscribeProperty(path: string, handler: PropertyHandler): () => void {
+    const propertyPath = normalizeSubscriptionPath(path)
+
+    let subscribers = propertySubscribers.get(propertyPath)
+
+    if (!subscribers) {
+      subscribers = new Map()
+      propertySubscribers.set(propertyPath, subscribers)
+    }
+
+    const shouldSubscribe = subscribers.size === 0
+    const subscriptionId = Symbol(propertyPath)
+
+    subscribers.set(subscriptionId, handler)
+
+    if (shouldSubscribe && !isTelemetryProperty(propertyPath) && connection?.isOpen) {
+      connection.subscribe(propertyPath)
+    }
+
+    let active = true
+
+    return () => {
+      if (!active) {
+        return
+      }
+
+      active = false
+
+      const currentSubscribers = propertySubscribers.get(propertyPath)
+
+      if (!currentSubscribers) {
+        return
+      }
+
+      currentSubscribers.delete(subscriptionId)
+
+      if (currentSubscribers.size > 0) {
+        return
+      }
+
+      propertySubscribers.delete(propertyPath)
+
+      if (!isTelemetryProperty(propertyPath) && connection?.isOpen) {
+        connection.unsubscribe(propertyPath)
+      }
+    }
+  }
+
   function setProperty(path: string, value: FlightGearPropertyValue) {
     if (!connection?.isOpen) {
       throw new Error('FlightGear is not connected')
@@ -226,6 +293,12 @@ export const useFlightGearStore = defineStore('flightgear', () => {
           currentConnection.subscribe(path)
         }
 
+        for (const path of propertySubscribers.keys()) {
+          if (!isTelemetryProperty(path)) {
+            currentConnection.subscribe(path)
+          }
+        }
+
         void fetchInitialTelemetry(currentConnection)
         startHeartbeat(currentConnection)
       },
@@ -243,6 +316,14 @@ export const useFlightGearStore = defineStore('flightgear', () => {
 
         if (handler) {
           handler(message.value)
+        }
+
+        const subscribers = propertySubscribers.get(message.path)
+
+        if (subscribers) {
+          for (const subscriber of subscribers.values()) {
+            subscriber(message.value)
+          }
         }
       },
 
@@ -343,5 +424,6 @@ export const useFlightGearStore = defineStore('flightgear', () => {
     readProperty,
     readPropertyNode,
     setProperty,
+    subscribeProperty,
   }
 })

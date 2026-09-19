@@ -49,12 +49,13 @@
                 v-model="path"
                 type="text"
                 spellcheck="false"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 outline-none transition focus:border-slate-500"
+                :disabled="isWatching"
+                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 outline-none transition focus:border-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
                 placeholder="/controls/lighting/nav-lights"
               />
             </div>
 
-            <div>
+            <div class="flex flex-wrap items-center gap-3">
               <button
                 :disabled="isReading || !path.trim()"
                 class="cursor-pointer rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
@@ -62,12 +63,25 @@
               >
                 {{ isReading ? 'Reading...' : 'Read' }}
               </button>
+
+              <button
+                :disabled="!isWatching && !canWatch"
+                class="cursor-pointer rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                @click="toggleLive"
+              >
+                {{ isWatching ? 'Stop live' : 'Start live' }}
+              </button>
+
+              <span v-if="isWatching" class="text-xs text-emerald-400">
+                Watching {{ livePath }}
+              </span>
             </div>
 
             <div>
               <div class="mb-2 text-sm font-medium text-slate-300">Current value</div>
 
               <div
+                data-testid="current-value"
                 class="min-h-12 rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 font-mono text-sm"
               >
                 <span v-if="hasCurrentValue">{{ formattedCurrentValue }}</span>
@@ -137,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useFlightGearStore } from '@/stores/flightgear'
@@ -161,6 +175,16 @@ const isWriting = ref(false)
 
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
+
+let stopLiveSubscription: (() => void) | null = null
+
+const livePath = ref<string | null>(null)
+
+const isWatching = computed(() => livePath.value !== null)
+
+const canWatch = computed(
+  () => flightgear.connectionState === 'connected' && path.value.trim().length > 0,
+)
 
 const connectionLabel = computed(() => {
   switch (flightgear.connectionState) {
@@ -244,7 +268,72 @@ function inferValueType(value: unknown) {
   }
 }
 
+function stopWatching() {
+  stopLiveSubscription?.()
+
+  stopLiveSubscription = null
+  livePath.value = null
+}
+
+async function startWatching() {
+  const propertyPath = path.value.trim()
+
+  if (!propertyPath || flightgear.connectionState !== 'connected') {
+    return
+  }
+
+  stopWatching()
+
+  error.value = null
+  success.value = null
+
+  let receivedLiveValue = false
+
+  try {
+    livePath.value = propertyPath
+
+    stopLiveSubscription = flightgear.subscribeProperty(propertyPath, (value) => {
+      if (livePath.value !== propertyPath) {
+        return
+      }
+
+      receivedLiveValue = true
+      currentValue.value = value
+      hasCurrentValue.value = true
+    })
+
+    try {
+      const initialValue = await flightgear.readProperty(propertyPath)
+
+      if (livePath.value === propertyPath && !receivedLiveValue) {
+        currentValue.value = initialValue
+        hasCurrentValue.value = true
+
+        inferValueType(initialValue)
+      }
+    } catch (readError) {
+      if (livePath.value === propertyPath) {
+        error.value = `Live watch started, but initial read failed: ${getErrorMessage(readError)}`
+      }
+    }
+  } catch (watchError) {
+    stopWatching()
+    error.value = getErrorMessage(watchError)
+  }
+}
+
+async function toggleLive() {
+  if (isWatching.value) {
+    stopWatching()
+    return
+  }
+
+  await startWatching()
+}
+
 function selectPropertyNode(node: FlightGearPropertyNode) {
+  stopWatching()
+
   path.value = node.path
   error.value = null
   success.value = null
@@ -362,4 +451,8 @@ async function write() {
     isWriting.value = false
   }
 }
+
+onUnmounted(() => {
+  stopWatching()
+})
 </script>
