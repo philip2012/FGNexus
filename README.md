@@ -9,7 +9,7 @@ FG Nexus is an independent, open-source project focused on providing a modern we
 The long-term goal is to bring live telemetry, maps, flight planning, multiplayer tools, aircraft utilities, ATC, logging, developer tools, and other companion features into one unified application.
 
 > [!NOTE]
-> FG Nexus is currently in early pre-alpha development. The telemetry dashboard is functional, but most planned features have not yet been implemented.
+> FG Nexus is currently in early pre-alpha development. Live telemetry and property-tree tooling are functional, but most planned features have not yet been implemented.
 
 ## Goals
 
@@ -60,6 +60,23 @@ The current pre-alpha implementation includes:
 - Geographic coordinate formatting with N/S/E/W hemisphere indicators
 - Responsive telemetry dashboard layout
 - Unit-tested telemetry presentation and formatting
+- Live FlightGear telemetry through the PropertyListener WebSocket interface
+- Initial property hydration through FlightGear's HTTP property API
+- Hierarchical FlightGear property-tree browser with lazy-loaded navigation
+- Generic property reads and writes
+- Live property watching through dynamic PropertyListener subscriptions
+- Reference-counted property subscriptions shared safely with telemetry
+- Automatic restoration of live property subscriptions after reconnects
+- Primary flight, motion, position, and environment telemetry panels
+- Connection lifecycle states including connecting, connected, disconnecting, disconnected, and error
+- Automatic reconnection after unexpected FlightGear disconnects
+- Manual cancellation of reconnection attempts
+- Telemetry freshness monitoring and stale-data detection
+- Automatic clearing of unavailable or disconnected telemetry
+- Aviation-style heading and track formatting
+- Geographic coordinate formatting with N/S/E/W hemisphere indicators
+- Responsive telemetry and property-browser interfaces
+- Unit-tested transport, store, telemetry, and property-browser behavior
 
 ## Current Stack
 
@@ -143,9 +160,9 @@ npm run format
 
 ### Pre-alpha
 
-FG Nexus has completed its first functional telemetry-dashboard milestone.
+FG Nexus has completed its initial telemetry and property-tree tooling milestones.
 
-The current application can connect directly to a running FlightGear instance, retrieve an initial telemetry snapshot, receive live property updates, monitor telemetry freshness, and recover automatically from unexpected connection loss.
+The current application can connect directly to a running FlightGear instance, retrieve telemetry and property snapshots, receive live PropertyListener updates, browse the FlightGear property tree, read and write properties, watch arbitrary properties in real time, and recover subscriptions automatically after unexpected connection loss.
 
 Current telemetry includes:
 
@@ -174,10 +191,14 @@ The telemetry prototype currently communicates directly with FlightGear:
 FG Nexus Web
     │
     ├── HTTP property API
-    │     Initial telemetry hydration
+    │     Telemetry hydration
+    │     Property reads
+    │     Property-tree browsing
     │
     └── PropertyListener WebSocket
-          Live property updates
+          Live telemetry updates
+          Dynamic property watching
+          Property writes
     │
     ▼
 FlightGear
@@ -189,7 +210,7 @@ FlightGear must currently be running with its HTTP server enabled, for example:
 fgfs --httpd=5480
 ```
 
-The application connects to the local FlightGear PropertyListener endpoint and subscribes to supported property-tree nodes.
+The application uses FlightGear's HTTP property API for snapshots and property-tree navigation, while the PropertyListener WebSocket provides live telemetry, dynamic property subscriptions, and property writes.
 
 This direct connection is intended primarily for early development and validation of the telemetry architecture.
 
@@ -217,12 +238,16 @@ Moving FlightGear communication behind a dedicated bridge will also allow FG Nex
 
 ## Testing
 
-The project currently uses Vitest and Vue Test Utils.
+Current tests cover the application shell, FlightGear transport, connection and subscription behavior, telemetry presentation, property-tree navigation, and property-browser interactions, including:
 
-Current tests cover the application shell and telemetry presentation behavior, including:
-
-- Unavailable telemetry
-- Signed telemetry values
+- PropertyListener command serialization and message parsing
+- HTTP property and hierarchy responses
+- Shared and reference-counted property subscriptions
+- Subscription restoration after reconnects
+- Live property updates and cleanup
+- Property read/write validation and confirmation
+- Property-tree loading and sorting
+- Unavailable and signed telemetry values
 - Aviation heading padding
 - Geographic coordinate formatting
 - Telemetry labels, units, and numeric rendering
