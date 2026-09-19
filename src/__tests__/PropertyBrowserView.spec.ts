@@ -247,6 +247,7 @@ describe('PropertyBrowserView', () => {
 
     const stop = vi.fn<() => void>()
 
+    vi.spyOn(flightgear, 'readProperty').mockResolvedValue(false)
     vi.spyOn(flightgear, 'subscribeProperty').mockReturnValue(stop)
 
     const wrapper = mountView()
@@ -256,8 +257,6 @@ describe('PropertyBrowserView', () => {
     wrapper.unmount()
 
     expect(stop).toHaveBeenCalledOnce()
-
-    vi.spyOn(flightgear, 'readProperty').mockResolvedValue(false)
   })
 
   it('does not overwrite a live update with an older initial snapshot', async () => {
