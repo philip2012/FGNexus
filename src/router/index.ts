@@ -11,6 +11,11 @@ const router = createRouter({
       component: DashboardView,
     },
     {
+      path: '/map',
+      name: 'map',
+      component: () => import('@/views/MapView.vue'),
+    },
+    {
       path: '/properties',
       name: 'properties',
       component: PropertyBrowserView,
