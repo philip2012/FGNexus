@@ -106,19 +106,42 @@ function removeAircraftMarker() {
   aircraftMarker = null
 }
 
-function updateAircraft() {
+let positionUpdateFrame: number | null = null
+
+function getAircraftPosition(): [number, number] | null {
   if (
-    !map ||
     flightgear.latitudeDeg === null ||
     flightgear.longitudeDeg === null ||
     !Number.isFinite(flightgear.latitudeDeg) ||
     !Number.isFinite(flightgear.longitudeDeg)
   ) {
-    removeAircraftMarker()
+    return null
+  }
+
+  return [flightgear.longitudeDeg, flightgear.latitudeDeg]
+}
+
+function updateAircraftRotation() {
+  if (!aircraftMarker) {
     return
   }
 
-  const position: [number, number] = [flightgear.longitudeDeg, flightgear.latitudeDeg]
+  aircraftMarker.setRotation(
+    flightgear.trackDeg !== null && Number.isFinite(flightgear.trackDeg) ? flightgear.trackDeg : 0,
+  )
+}
+
+function updateAircraftPosition() {
+  if (!map) {
+    return
+  }
+
+  const position = getAircraftPosition()
+
+  if (!position) {
+    removeAircraftMarker()
+    return
+  }
 
   if (!aircraftMarker) {
     aircraftMarker = new Marker({
@@ -127,24 +150,35 @@ function updateAircraft() {
     })
       .setLngLat(position)
       .addTo(map)
+  } else {
+    aircraftMarker.setLngLat(position)
   }
 
-  aircraftMarker.setLngLat(position)
-
-  aircraftMarker.setRotation(
-    flightgear.trackDeg !== null && Number.isFinite(flightgear.trackDeg) ? flightgear.trackDeg : 0,
-  )
+  updateAircraftRotation()
 
   if (followAircraft.value) {
-    map.jumpTo({
-      center: position,
-    })
+    map.setCenter(position)
   }
+}
+
+function scheduleAircraftPositionUpdate() {
+  if (positionUpdateFrame !== null) {
+    return
+  }
+
+  positionUpdateFrame = window.requestAnimationFrame(() => {
+    positionUpdateFrame = null
+    updateAircraftPosition()
+  })
+}
+
+function stopFollowing() {
+  followAircraft.value = false
 }
 
 function enableFollow() {
   followAircraft.value = true
-  updateAircraft()
+  updateAircraftPosition()
 }
 
 onMounted(() => {
@@ -171,29 +205,43 @@ onMounted(() => {
   })
 
   map.on('load', () => {
-    if (hasPosition.value) {
+    const position = getAircraftPosition()
+
+    if (position) {
       map?.jumpTo({
-        center: [flightgear.longitudeDeg ?? 0, flightgear.latitudeDeg ?? 0],
+        center: position,
         zoom: 9,
       })
 
-      updateAircraft()
+      updateAircraftPosition()
     }
   })
 
-  map.on('dragstart', () => {
-    followAircraft.value = false
-  })
+  map.on('mousedown', stopFollowing)
+  map.on('wheel', stopFollowing)
+  map.on('touchstart', stopFollowing)
 })
 
 watch(
-  () => [flightgear.latitudeDeg, flightgear.longitudeDeg, flightgear.trackDeg] as const,
+  () => [flightgear.latitudeDeg, flightgear.longitudeDeg] as const,
   () => {
-    updateAircraft()
+    scheduleAircraftPositionUpdate()
+  },
+)
+
+watch(
+  () => flightgear.trackDeg,
+  () => {
+    updateAircraftRotation()
   },
 )
 
 onUnmounted(() => {
+  if (positionUpdateFrame !== null) {
+    window.cancelAnimationFrame(positionUpdateFrame)
+    positionUpdateFrame = null
+  }
+
   removeAircraftMarker()
 
   map?.remove()
