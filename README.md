@@ -9,7 +9,7 @@ FG Nexus is an independent, open-source project focused on providing a modern we
 The long-term goal is to bring live telemetry, maps, flight planning, multiplayer tools, aircraft utilities, ATC, logging, developer tools, and other companion features into one unified application.
 
 > [!NOTE]
-> FG Nexus is currently in early pre-alpha development. Live telemetry and property-tree tooling are functional, but most planned features have not yet been implemented.
+> FG Nexus is currently in early pre-alpha development. Live telemetry, the moving map, and property-tree tooling are functional, but most planned features have not yet been implemented.
 
 ## Goals
 
@@ -30,7 +30,7 @@ FG Nexus is built around these core ideas:
 ## Planned Features
 
 **Core Navigation & Flight**
-`Live Telemetry` • `Moving Map` • `Flight Planning` • `Airport & Nav Info`
+`Flight Planning` • `Airport & Nav Info`
 
 **Cockpit & Aircraft Controls**
 `Radio Management` • `Autopilot Monitoring & Control` • `Aircraft Utilities` • `Weight & Balance` • `Checklists`
@@ -39,7 +39,7 @@ FG Nexus is built around these core ideas:
 `Weather & Environment` • `Multiplayer Traffic` • `Flight Logging` • `Failure Management`
 
 **Integrations & Dev Tools**
-`Virtual Airline Tools` • `SimBrief Integration` • `Property-Tree Tools` • `AI-Assisted ATC`
+`Virtual Airline Tools` • `SimBrief Integration` • `AI-Assisted ATC`
 
 > [!NOTE]
 > The planned feature set may change as the project continues to develop.
@@ -50,6 +50,9 @@ The current pre-alpha implementation includes:
 
 - Live FlightGear telemetry through the PropertyListener WebSocket interface
 - Initial property hydration through FlightGear's HTTP property API
+- Live moving map using MapLibre GL JS and OpenFreeMap
+- Live aircraft position and ground-track display on the moving map
+- Aircraft follow mode with manual pan and zoom exploration
 - Hierarchical FlightGear property-tree browser with lazy-loaded navigation
 - Generic property reads and writes
 - Live property watching through dynamic PropertyListener subscriptions
@@ -64,7 +67,7 @@ The current pre-alpha implementation includes:
 - Aviation-style heading and track formatting
 - Geographic coordinate formatting with N/S/E/W hemisphere indicators
 - Responsive telemetry and property-browser interfaces
-- Unit-tested transport, store, telemetry, and property-browser behavior
+- Unit-tested transport, store, telemetry, moving-map, and property-browser behavior
 
 ## Current Stack
 
@@ -76,6 +79,8 @@ The application currently uses:
 - Vue Router
 - Pinia
 - Tailwind CSS
+- MapLibre GL JS
+- OpenFreeMap
 - Vitest
 - Vue Test Utils
 - ESLint / Oxlint
@@ -148,9 +153,9 @@ npm run format
 
 ### Pre-alpha
 
-FG Nexus has completed its initial telemetry and property-tree tooling milestones.
+FG Nexus has completed its initial telemetry, property-tree tooling, and moving-map milestones.
 
-The current application can connect directly to a running FlightGear instance, retrieve telemetry and property snapshots, receive live PropertyListener updates, browse the FlightGear property tree, read and write properties, watch arbitrary properties in real time, and recover subscriptions automatically after unexpected connection loss.
+The current application can connect directly to a running FlightGear instance, retrieve telemetry and property snapshots, receive live PropertyListener updates, browse the FlightGear property tree, read and write properties, watch arbitrary properties in real time, recover subscriptions automatically after unexpected connection loss, and display the aircraft on a live moving map with follow and manual exploration modes.
 
 Current telemetry includes:
 
@@ -169,7 +174,7 @@ Current telemetry includes:
 
 The current direct browser-to-FlightGear connection is an early prototype and is not intended to represent the final networking architecture.
 
-Future work will expand beyond telemetry into navigation, maps, flight planning, aircraft controls, multiplayer functionality, developer tooling, and other FlightGear companion features.
+Future work will expand beyond the current telemetry, property tooling, and moving-map capabilities into navigation, flight planning, aircraft controls, multiplayer functionality, developer tooling, and other FlightGear companion features.
 
 ## Current FlightGear Integration
 
@@ -226,7 +231,7 @@ Moving FlightGear communication behind a dedicated bridge will also allow FG Nex
 
 ## Testing
 
-Current tests cover the application shell, FlightGear transport, connection and subscription behavior, telemetry presentation, property-tree navigation, and property-browser interactions, including:
+Current tests cover the application shell, FlightGear transport, connection and subscription behavior, telemetry presentation, moving-map interactions, property-tree navigation, and property-browser interactions, including:
 
 - PropertyListener command serialization and message parsing
 - HTTP property and hierarchy responses
@@ -235,6 +240,9 @@ Current tests cover the application shell, FlightGear transport, connection and 
 - Live property updates and cleanup
 - Property read/write validation and confirmation
 - Property-tree loading and sorting
+- Moving-map aircraft position and track updates
+- Moving-map follow, pan, and zoom behavior
+- Moving-map cleanup when telemetry disappears
 - Unavailable and signed telemetry values
 - Aviation heading padding
 - Geographic coordinate formatting
