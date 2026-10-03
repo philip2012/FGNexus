@@ -36,6 +36,21 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { useFlightGearStore } from '@/stores/flightgear'
 
+const props = defineProps<{
+  focusTarget?: {
+    latitudeDeg: number
+    longitudeDeg: number
+    requestId: number
+  } | null
+
+  airportTarget?: {
+    id: string
+    name: string
+    latitudeDeg: number
+    longitudeDeg: number
+  } | null
+}>()
+
 setWorkerUrl(maplibreWorkerUrl)
 
 const flightgear = useFlightGearStore()
@@ -45,6 +60,7 @@ const followAircraft = ref(true)
 
 let map: MapLibreMap | null = null
 let aircraftMarker: Marker | null = null
+let airportMarker: Marker | null = null
 
 const hasPosition = computed(
   () =>
@@ -215,6 +231,7 @@ onMounted(() => {
 
       updateAircraftPosition()
     }
+    updateAirportMarker()
   })
 
   map.on('mousedown', stopFollowing)
@@ -236,6 +253,13 @@ watch(
   },
 )
 
+watch(
+  () => props.airportTarget,
+  () => {
+    updateAirportMarker()
+  },
+)
+
 onUnmounted(() => {
   if (positionUpdateFrame !== null) {
     window.cancelAnimationFrame(positionUpdateFrame)
@@ -243,8 +267,83 @@ onUnmounted(() => {
   }
 
   removeAircraftMarker()
+  removeAirportMarker()
 
   map?.remove()
   map = null
 })
+
+watch(
+  () => props.focusTarget,
+  (target) => {
+    if (!map || !target) {
+      return
+    }
+
+    stopFollowing()
+
+    map.jumpTo({
+      center: [target.longitudeDeg, target.latitudeDeg],
+      zoom: 12,
+    })
+  },
+)
+
+function createAirportElement(id: string, name: string): HTMLElement {
+  const element = document.createElement('div')
+
+  element.title = `${id} — ${name}`
+  element.style.display = 'flex'
+  element.style.flexDirection = 'column'
+  element.style.alignItems = 'center'
+  element.style.gap = '3px'
+  element.style.filter = 'drop-shadow(0 2px 3px rgb(0 0 0 / 0.65))'
+
+  const label = document.createElement('div')
+  label.textContent = id
+  label.style.padding = '2px 5px'
+  label.style.borderRadius = '4px'
+  label.style.background = '#0f172a'
+  label.style.border = '1px solid #94a3b8'
+  label.style.color = 'white'
+  label.style.fontSize = '11px'
+  label.style.fontFamily = 'monospace'
+  label.style.fontWeight = '600'
+
+  const dot = document.createElement('div')
+  dot.style.width = '10px'
+  dot.style.height = '10px'
+  dot.style.borderRadius = '50%'
+  dot.style.background = 'white'
+  dot.style.border = '2px solid #0f172a'
+
+  element.append(label, dot)
+
+  return element
+}
+
+function removeAirportMarker() {
+  airportMarker?.remove()
+  airportMarker = null
+}
+
+function updateAirportMarker() {
+  if (!map) {
+    return
+  }
+
+  removeAirportMarker()
+
+  const target = props.airportTarget
+
+  if (!target) {
+    return
+  }
+
+  airportMarker = new Marker({
+    element: createAirportElement(target.id, target.name),
+  })
+    .setLngLat([target.longitudeDeg, target.latitudeDeg])
+    .addTo(map)
+}
 </script>

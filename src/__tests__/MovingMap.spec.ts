@@ -127,6 +127,7 @@ describe('MovingMap', () => {
     maplibre.marker.setRotation.mockClear()
     maplibre.marker.addTo.mockClear()
     maplibre.marker.remove.mockClear()
+    maplibre.map.jumpTo.mockClear()
 
     animationFrameCallback = null
 
@@ -307,6 +308,68 @@ describe('MovingMap', () => {
     flushAnimationFrame()
 
     expect(maplibre.map.setCenter).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('shows and removes the selected airport marker', async () => {
+    const wrapper = mount(MovingMap, {
+      props: {
+        airportTarget: {
+          id: 'VVTS',
+          name: 'TAN SON NHAT INTL',
+          latitudeDeg: 10.81875,
+          longitudeDeg: 106.651735,
+        },
+      },
+      global: {
+        plugins: [pinia],
+      },
+    })
+
+    triggerMapEvent('load')
+    await flushPromises()
+
+    expect(maplibre.Marker).toHaveBeenCalledOnce()
+
+    expect(maplibre.marker.setLngLat).toHaveBeenCalledWith([106.651735, 10.81875])
+
+    expect(maplibre.marker.addTo).toHaveBeenCalledWith(maplibre.map)
+
+    await wrapper.setProps({
+      airportTarget: null,
+    })
+
+    expect(maplibre.marker.remove).toHaveBeenCalledOnce()
+
+    wrapper.unmount()
+  })
+
+  it('focuses the selected airport when requested', async () => {
+    const wrapper = mountMap()
+
+    await wrapper.setProps({
+      focusTarget: {
+        latitudeDeg: 10.81875,
+        longitudeDeg: 106.651735,
+        requestId: 1,
+      },
+    })
+
+    expect(maplibre.map.jumpTo).toHaveBeenCalledWith({
+      center: [106.651735, 10.81875],
+      zoom: 12,
+    })
+
+    await wrapper.setProps({
+      focusTarget: {
+        latitudeDeg: 10.81875,
+        longitudeDeg: 106.651735,
+        requestId: 2,
+      },
+    })
+
+    expect(maplibre.map.jumpTo).toHaveBeenCalledTimes(2)
 
     wrapper.unmount()
   })

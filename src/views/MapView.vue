@@ -30,21 +30,69 @@
         </div>
       </header>
 
-      <MovingMap />
+      <div class="space-y-6">
+        <AirportSearch />
+        <AirportDetails @show-on-map="showSelectedAirportOnMap" />
+        <MovingMap :focus-target="mapFocusTarget" :airport-target="airportTarget" />
+      </div>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import AirportDetails from '@/components/AirportDetails.vue'
+import AirportSearch from '@/components/AirportSearch.vue'
 import MovingMap from '@/components/MovingMap.vue'
+
 import { useFlightGearStore } from '@/stores/flightgear'
+import { useNavDataStore } from '@/stores/navdata'
 
 const flightgear = useFlightGearStore()
+const navdata = useNavDataStore()
 
 const canConnect = computed(
   () => flightgear.connectionState === 'disconnected' || flightgear.connectionState === 'error',
 )
+
+const mapFocusTarget = ref<{
+  latitudeDeg: number
+  longitudeDeg: number
+  requestId: number
+} | null>(null)
+
+let mapFocusRequestId = 0
+
+function showSelectedAirportOnMap() {
+  const airport = navdata.selectedAirport
+
+  if (!airport) {
+    return
+  }
+
+  mapFocusRequestId += 1
+
+  mapFocusTarget.value = {
+    latitudeDeg: airport.latitudeDeg,
+    longitudeDeg: airport.longitudeDeg,
+    requestId: mapFocusRequestId,
+  }
+}
+
+const airportTarget = computed(() => {
+  const airport = navdata.selectedAirport
+
+  if (!airport) {
+    return null
+  }
+
+  return {
+    id: airport.id,
+    name: airport.name,
+    latitudeDeg: airport.latitudeDeg,
+    longitudeDeg: airport.longitudeDeg,
+  }
+})
 </script>

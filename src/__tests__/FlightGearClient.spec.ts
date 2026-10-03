@@ -490,4 +490,133 @@ describe('FlightGearClient', () => {
       }),
     ])
   })
+
+  it('fetches and parses the FlightGear airport index', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify([' TAN SON NHAT INTL   (VVTS)', ' NOI BAI INTL   (VVNB)']), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = new FlightGearClient({
+      httpBaseUrl: 'http://test:5480',
+    })
+
+    const airports = await client.fetchAirports()
+
+    expect(fetchMock).toHaveBeenCalledWith('http://test:5480/navdb?q=airports')
+
+    expect(airports).toEqual([
+      {
+        id: 'VVTS',
+        name: 'TAN SON NHAT INTL',
+      },
+      {
+        id: 'VVNB',
+        name: 'NOI BAI INTL',
+      },
+    ])
+  })
+
+  it('fetches and parses FlightGear airport details', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              id: 'VVTS',
+              geometry: {
+                type: 'GeometryCollection',
+                geometries: [
+                  {
+                    type: 'Point',
+                    coordinates: [106.651735, 10.81875, 10.0584],
+                  },
+                ],
+              },
+              properties: {
+                id: 'VVTS',
+                name: 'TAN SON NHAT INTL',
+                type: 'airport',
+                'elevation-m': 10.0584,
+                runways: [
+                  {
+                    id: '07R',
+                    length_m: 3846,
+                    width_m: 45.11,
+                    surface: 'concrete',
+                    heading_deg: 69.1,
+                  },
+                ],
+                longestRwyLength_m: 3846,
+                longestRwyHeading_deg: 69.1,
+                longestRwySurface: 'concrete',
+                metar: true,
+                comm: [
+                  {
+                    id: 'TWR',
+                    mhz: 118.7,
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      ),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = new FlightGearClient({
+      httpBaseUrl: 'http://test:5480',
+    })
+
+    const airport = await client.fetchAirport('vvts')
+
+    expect(fetchMock).toHaveBeenCalledWith('http://test:5480/navdb?q=airport&id=VVTS')
+
+    expect(airport).toEqual({
+      id: 'VVTS',
+      name: 'TAN SON NHAT INTL',
+      latitudeDeg: 10.81875,
+      longitudeDeg: 106.651735,
+      elevationM: 10.0584,
+      runways: [
+        {
+          id: '07R',
+          lengthM: 3846,
+          widthM: 45.11,
+          surface: 'concrete',
+          headingDeg: 69.1,
+        },
+      ],
+      longestRunwayLengthM: 3846,
+      longestRunwayHeadingDeg: 69.1,
+      longestRunwaySurface: 'concrete',
+      hasMetar: true,
+      comms: [
+        {
+          id: 'TWR',
+          mhz: 118.7,
+        },
+      ],
+    })
+  })
 })

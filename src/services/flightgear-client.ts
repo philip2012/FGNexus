@@ -37,6 +37,144 @@ export interface FlightGearPropertyConnection {
   close(): void
 }
 
+export interface FlightGearAirportSummary {
+  id: string
+  name: string
+}
+
+export interface FlightGearAirportRunway {
+  id: string
+  lengthM: number
+  widthM: number
+  surface: string
+  headingDeg: number
+}
+
+export interface FlightGearAirportComm {
+  id: string
+  mhz: number
+}
+
+export interface FlightGearAirport {
+  id: string
+  name: string
+  latitudeDeg: number
+  longitudeDeg: number
+  elevationM: number
+  runways: FlightGearAirportRunway[]
+  longestRunwayLengthM: number
+  longestRunwayHeadingDeg: number
+  longestRunwaySurface: string
+  hasMetar: boolean
+  comms: FlightGearAirportComm[]
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function parseAirportSummary(value: unknown): FlightGearAirportSummary {
+  if (typeof value !== 'string') {
+    throw new Error('FlightGear returned an invalid airport index entry')
+  }
+
+  const match = value.match(/^\s*(.*?)\s+\(([^()]+)\)\s*$/)
+
+  if (!match) {
+    throw new Error(`FlightGear returned an invalid airport index entry: ${value}`)
+  }
+
+  return {
+    name: match[1]?.trim() ?? '',
+    id: match[2]?.trim() ?? '',
+  }
+}
+
+function parseAirportRunway(value: unknown): FlightGearAirportRunway {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== 'string' ||
+    typeof value.length_m !== 'number' ||
+    typeof value.width_m !== 'number' ||
+    typeof value.surface !== 'string' ||
+    typeof value.heading_deg !== 'number'
+  ) {
+    throw new Error('FlightGear returned an invalid airport runway')
+  }
+
+  return {
+    id: value.id,
+    lengthM: value.length_m,
+    widthM: value.width_m,
+    surface: value.surface,
+    headingDeg: value.heading_deg,
+  }
+}
+
+function parseAirportComm(value: unknown): FlightGearAirportComm {
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.mhz !== 'number') {
+    throw new Error('FlightGear returned an invalid airport communication frequency')
+  }
+
+  return {
+    id: value.id,
+    mhz: value.mhz,
+  }
+}
+
+function parseAirport(data: unknown): FlightGearAirport {
+  if (!isRecord(data) || !Array.isArray(data.features) || data.features.length !== 1) {
+    throw new Error('FlightGear returned an invalid airport response')
+  }
+
+  const feature = data.features[0]
+
+  if (
+    !isRecord(feature) ||
+    !isRecord(feature.properties) ||
+    !isRecord(feature.geometry) ||
+    feature.geometry.type !== 'GeometryCollection' ||
+    !Array.isArray(feature.geometry.geometries)
+  ) {
+    throw new Error('FlightGear returned an invalid airport feature')
+  }
+
+  const properties = feature.properties
+  const referencePoint = feature.geometry.geometries[0]
+
+  if (
+    !isRecord(referencePoint) ||
+    referencePoint.type !== 'Point' ||
+    !Array.isArray(referencePoint.coordinates) ||
+    typeof referencePoint.coordinates[0] !== 'number' ||
+    typeof referencePoint.coordinates[1] !== 'number' ||
+    typeof properties.id !== 'string' ||
+    typeof properties.name !== 'string' ||
+    typeof properties['elevation-m'] !== 'number' ||
+    !Array.isArray(properties.runways) ||
+    !Array.isArray(properties.comm) ||
+    typeof properties.longestRwyLength_m !== 'number' ||
+    typeof properties.longestRwyHeading_deg !== 'number' ||
+    typeof properties.longestRwySurface !== 'string'
+  ) {
+    throw new Error('FlightGear returned invalid airport data')
+  }
+
+  return {
+    id: properties.id,
+    name: properties.name,
+    longitudeDeg: referencePoint.coordinates[0],
+    latitudeDeg: referencePoint.coordinates[1],
+    elevationM: properties['elevation-m'],
+    runways: properties.runways.map(parseAirportRunway),
+    longestRunwayLengthM: properties.longestRwyLength_m,
+    longestRunwayHeadingDeg: properties.longestRwyHeading_deg,
+    longestRunwaySurface: properties.longestRwySurface,
+    hasMetar: properties.metar === true,
+    comms: properties.comm.map(parseAirportComm),
+  }
+}
+
 interface FlightGearClientOptions {
   httpBaseUrl?: string
   propertyListenerUrl?: string
@@ -210,5 +348,44 @@ export class FlightGearClient {
         socket.close()
       },
     }
+  }
+
+  async fetchAirports(): Promise<FlightGearAirportSummary[]> {
+    const response = await fetch(`${this.httpBaseUrl}/navdb?q=airports`)
+
+    if (!response.ok) {
+      throw new Error(`FlightGear HTTP request failed with status ${response.status}`)
+    }
+
+    const data: unknown = await response.json()
+
+    if (!Array.isArray(data)) {
+      throw new Error('FlightGear returned an invalid airport index')
+    }
+
+    return data.map(parseAirportSummary)
+  }
+
+  async fetchAirport(id: string): Promise<FlightGearAirport> {
+    const airportId = id.trim().toUpperCase()
+
+    if (!airportId) {
+      throw new Error('Airport identifier is required')
+    }
+
+    const params = new URLSearchParams({
+      q: 'airport',
+      id: airportId,
+    })
+
+    const response = await fetch(`${this.httpBaseUrl}/navdb?${params}`)
+
+    if (!response.ok) {
+      throw new Error(`FlightGear HTTP request failed with status ${response.status}`)
+    }
+
+    const data: unknown = await response.json()
+
+    return parseAirport(data)
   }
 }
